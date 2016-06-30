@@ -1,0 +1,64 @@
+# Makefile for the I/O benchmark -- virgo xeon cluster
+
+# objects
+OBJS = get_mfluid_property.o \
+       flash_release.o \
+       flash_benchmark_io.o 
+
+OBJS_HDF5_PARALLEL_IO = checkpoint_ncmpi_parallel.o \
+                        plotfile_ncmpi_parallel.o \
+                        ncmpi_file_interface.o \
+                        ncmpi_parallel_write.o \
+                        ncmpi_parallel_write_single.o
+
+# compiler and linker commands
+FCOMP   = mpif90
+CCOMP   = mpicc
+CPPCOMP = mpiCC
+LINK    = mpif90 
+
+
+# library locations
+NCMPIpath = /usr
+MPI	= /usr/mpi
+
+# compiler flags
+FFLAGS = -c -fast -r8 \
+         -DN_DIM=3 -DMAXBLOCKS=100 -DIONMAX=13 -DVIRGO
+
+F90FLAGS = 
+
+CFLAGS = -c -I $(NCMPIpath)/include/ -DTFLOPS -DN_DIM=3 -DVIRGO
+
+
+# linker flags
+LFLAGS = -o 
+
+
+
+# libraries to include
+LIB = -L$(MPI)/lib -lmpich -L$(NCMPIpath)/lib -lnetcdf 
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+.F90.o :
+	$(FCOMP) $(FFLAGS) $<
+
+.f.o :
+	$(FCOMP) $(FFLAGS) $<
+
+.c.o :
+	$(CCOMP) $(CFLAGS) $<
+
+flash_benchmark_io: $(OBJS) \
+                    $(OBJS_HDF5_PARALLEL_IO) 
+	$(LINK) $(LFLAGS) $@ $(OBJS) $(OBJS_HDF5_PARALLEL_IO) $(LIB)
+
+
+
+
+
+
+
+
+

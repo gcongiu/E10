@@ -1,0 +1,74 @@
+# Makefile for the I/O benchmark -- sphere (SGI)
+
+# objects
+OBJS = get_mfluid_property.o \
+       flash_release.o \
+       flash_benchmark_io.o 
+
+OBJS_PNETCDF_PARALLEL_IO = checkpoint_ncmpi_parallel.o \
+                        plotfile_ncmpi_parallel.o \
+                        ncmpi_file_interface.o \
+                        ncmpi_parallel_write.o \
+                        ncmpi_parallel_write_single.o
+
+# compiler and linker commands
+FCOMP = mpif90
+CCOMP = mpicc
+CPPCOMP = mpicxx
+LINK = mpif90
+
+FCOMP   = ${HOME}/mpich2/bin/mpif90
+CCOMP   = ${HOME}/mpich2/bin/mpicc
+CPPCOMP = ${HOME}/mpich2/bin/mpicxx
+LINK    = ${HOME}/mpich2/bin/mpif90
+
+
+# library locations
+PNETCDFpath=${HOME}/pnetcdf
+#ZLIBpath = /usr/community/ncmpi/ZLIB
+#ZLIBpath = /usr
+
+# compiler flags
+FFLAGS = -c -fast -r8 \
+         -DN_DIM=3 -DMAXBLOCKS=100 -DIONMAX=13 -DCHIBA
+
+F90FLAGS = 
+
+CFLAGS = -c -O4 -I $(PNETCDFpath)/include/ -DCHIBA
+
+
+# linker flags
+LFLAGS = -o 
+
+
+
+# libraries to include
+LIB = -L $(PNETCDFpath)/lib -lpnetcdf
+
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+.F90.o :
+	$(FCOMP) $(FFLAGS) $<
+
+.f.o :
+	$(FCOMP) $(FFLAGS) $<
+
+.c.o :
+	$(CCOMP) $(CFLAGS) $<
+
+flash_benchmark_io: $(OBJS) \
+                    $(OBJS_PNETCDF_PARALLEL_IO) 
+	$(LINK) $(LFLAGS) $@ $(OBJS) $(OBJS_PNETCDF_PARALLEL_IO) $(LIB)
+
+clean::
+	rm -f *.o flash_benchmark_io
+
+
+
+
+
+
+
+
+

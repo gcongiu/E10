@@ -1,0 +1,64 @@
+# Makefile for the I/O benchmark -- ASCI Blue
+
+# objects
+OBJS = get_mfluid_property.o \
+       flash_release.o \
+       flash_benchmark_io.o 
+
+OBJS_PNETCDF_PARALLEL_IO = checkpoint_ncmpi_parallel.o \
+                        plotfile_ncmpi_parallel.o \
+                        ncmpi_file_interface.o \
+                        ncmpi_parallel_write.o \
+                        ncmpi_parallel_write_single.o
+
+# compiler and linker commands
+F90COMP = blrts_xlf90
+FCOMP   = blrts_xlf
+CCOMP   = blrts_xlc
+CPPCOMP = 
+LINK    = blrts_xlf90
+
+
+# library locations
+PNETCDFpath = /home/robl/soft/pnetcdf
+PNETCDF_INCLUDE = -I$(PNETCDFpath)/include
+PNETCDF_LIB = -L$(PNETCDFpath)/lib -lpnetcdf
+
+# compiler flags
+FFLAGS = -c -O3 -qintsize=4 -qrealsize=8 -cpp -qtune=auto \
+         -WF,-DN_DIM=3 -WF,-DMAXBLOCKS=100 -WF,-DIONMAX=13 -WF,-DBGL \
+	 -I/bgl/BlueLight/ppcfloor/bglsys/include/
+
+F90FLAGS = -qsuffix=f=F90:cpp=F90 -qfree
+
+CFLAGS = -c -O3 -I/bgl/BlueLight/ppcfloor/bglsys/include ${PNETCDF_INCLUDE} -DBGL -DN_DIM=3 -qtune=auto 
+
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+# linker flags
+
+LFLAGS = -L/bgl/BlueLight/ppcfloor/bglsys/lib \
+         -o
+
+
+# libraries to include
+LIB = ${PNETCDF_LIB} -lmpich.rts -lmsglayer.rts -ldevices.rts -lrts.rts
+
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+.F90.o :
+	$(F90COMP) $(FFLAGS) $(F90FLAGS) $<
+.f.o :
+	$(FCOMP) $(FFLAGS)  $<
+
+.c.o :
+	$(CCOMP) $(CFLAGS) $<
+
+flash_benchmark_io: $(OBJS) \
+                    $(OBJS_PNETCDF_PARALLEL_IO) 
+	$(LINK) $(LFLAGS) $@ $(OBJS) $(OBJS_PNETCDF_PARALLEL_IO) $(LIB)
+
+clean:
+	rm -f  *.o flash_benchmark_io

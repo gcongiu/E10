@@ -1,0 +1,28 @@
+31 Jan 2006
+- Updated 7 Sep 2006
+- Minor updates 26 Jul 2011
+
+This benchmark is algorithmically identical to the FLASH-IO kernel.  We have
+updated some routines to reflect changes in the Parallel-NetCDF and HDF5
+libraries.  We have also removed all HDF5-1.4 usage, as the v1_4 compatibility
+will be removed in HDF5-1.8
+
+Some items of note: 
+
+- at one point, this benchmark used some Fortran90 constructs only available in
+  the portland group Fortran90 compiler.  At some point over the last few
+  years, other f90 compilers have compilers have added these features.  In
+  short, pgf90 is sure to work and other f90 compilers are likely (but not
+  gauranteed) to work as well. 
+
+- the file 'flash_benchmark_io.F90' contains a section where the string
+  'basenm' gets a value.   This is the only way to make FLASH-IO test
+  performance on different file systems.  
+
+General changes:
+- There is no more Chiba City, but maybe the settings are usueful for other
+  linux clusters
+- changes to the Parallel-NetCDF: new names, new types for some parameters
+- the BGL fortan90 compiler does not add a _ to symbol names, necessitating a
+  bgl_compat.h file. 
+

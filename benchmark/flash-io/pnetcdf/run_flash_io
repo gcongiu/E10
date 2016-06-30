@@ -1,0 +1,5 @@
+for($i=0; $i<=100; $i++) {
+
+	`mpirun -np 2 ./flash_benchmark_io >OUTPUT_NCMPI.sphere.$i`;
+
+	}

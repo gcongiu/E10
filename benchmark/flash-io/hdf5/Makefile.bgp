@@ -1,0 +1,63 @@
+# Makefile for the I/O benchmark -- ASCI Blue
+
+# objects
+OBJS = get_mfluid_property.o \
+       flash_release.o \
+       flash_benchmark_io.o 
+
+OBJS_PHDF5_PARALLEL_IO = checkpoint_hdf5_parallel.o \
+                        plotfile_hdf5_parallel.o \
+                        h5_file_interface.o \
+                        h5_parallel_write.o \
+                        h5_parallel_write_single.o
+
+# compiler and linker commands
+F90COMP = tmpixlf90 
+FCOMP   = tmpixlf90
+CCOMP   = tmpixlc
+CPPCOMP = 
+LINK    = tmpixlf90
+
+
+# library locations
+PHDF5path = /home/robl/soft/phdf5-1.8.6
+PHDF5_INCLUDE = -I$(PHDF5path)/include
+PHDF5_LIB = -L$(PHDF5path)/lib -lhdf5
+
+# compiler flags
+FFLAGS = -c -O3 -qintsize=4 -qrealsize=8 -cpp -qtune=auto \
+         -WF,-DN_DIM=3 -WF,-DMAXBLOCKS=25 -WF,-DIONMAX=13 -WF,-DBGL \
+
+F90FLAGS = -qsuffix=f=F90:cpp=F90 -qfree
+
+CFLAGS = -c -O3 ${PHDF5_INCLUDE} -DH5_USE_16_API -DBGL -DN_DIM=3 -qtune=auto 
+
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+# linker flags
+
+LFLAGS = -o
+
+
+# libraries to include
+#LIB = ${PHDF5_LIB} -lmpich.rts -lmsglayer.rts -ldevices.rts -lrts.rts
+LIB = ${PHDF5_LIB} 
+
+
+.SUFFIXES: .f .F .f90 .F90 .c .C .o
+
+.F90.o :
+	$(F90COMP) $(FFLAGS) $(F90FLAGS) $<
+.f.o :
+	$(FCOMP) $(FFLAGS)  $<
+
+.c.o :
+	$(CCOMP) $(CFLAGS) $<
+
+flash_benchmark_io: $(OBJS) \
+                    $(OBJS_PHDF5_PARALLEL_IO) 
+	$(LINK) $(LFLAGS) $@ $(OBJS) $(OBJS_PHDF5_PARALLEL_IO) $(LIB)
+
+clean:
+	rm -f  *.o flash_benchmark_io
