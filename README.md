@@ -21,28 +21,28 @@ inside ROMIO to efficiently move data to and from the cache layer. Figure 1 show
 software stack. The Exascale10 code comes in the form a ADIO plugin in the existing “common”
 implementation, used by the UFS driver as well as other file system drivers.
 
-   ---    +-----------------------------+
-    ^     |                             |
-    |     |           MPI-IO            |
-    |     |                             |
-    |     +-----------------------------+
-    |     |                             |
-  ROMIO   |  ADIO (Abstract Device IO)  |
-    |     |                             |
-    |     +--------+--------------------+
-    |     |        |     +------------+ |
-    |     | BEEGFS | UFS | E10 Plugin | |
-    v     |        |     +------------+ |
-   ---    +--------+--------------------+
-          |                             |
-          |        DEEP-ER Cache        |
-          |                             |
-          +-----------------------------+
-          |                             |
-          |         Parallel FS         |
-          |                             |
-          +-----------------------------+
-        Figure 1: Exascale10 software stack
+            ---    +-----------------------------+
+             ^     |                             |
+             |     |           MPI-IO            |
+             |     |                             |
+             |     +-----------------------------+
+             |     |                             |
+           ROMIO   |  ADIO (Abstract Device IO)  |
+             |     |                             |
+             |     +--------+--------------------+
+             |     |        |     +------------+ |
+             |     | BEEGFS | UFS | E10 Plugin | |
+             v     |        |     +------------+ |
+            ---    +--------+--------------------+
+                   |                             |
+                   |        DEEP-ER Cache        |
+                   |                             |
+                   +-----------------------------+
+                   |                             |
+                   |         Parallel FS         |
+                   |                             |
+                   +-----------------------------+
+                 Figure 1: Exascale10 software stack
 
 
 Exascale10 hints extensions for MPI-IO
@@ -53,19 +53,19 @@ layer through MPI-IO. There is currently no additional API, although for the fut
 move the existing functionalities into a separate Exascale10 middleware, not relying on any other 
 implementation. Follows a list of hints and corresponding description:
 
- * e10_cache:                   used to “enable” or “disable” the use of local NVM devices. When set to 
-                                “coherent” the E10 implementation will try to acquire a lock for every file 
+ * `e10_cache`:                 used to `enable` or `disable` the use of local NVM devices. When set to 
+                                `coherent` the E10 implementation will try to acquire a lock for every file 
                                 extent in the local file system cache and will release them only when the 
-                                cache file is in sync with the global file. Default is “enable”.
- * e10_cache_path:              used to define the pathname of the cache file in the local file system.
- * e10_cache_flush_flag:        used to define when the cache synchronisation should start. “flush_immediate”
+                                cache file is in sync with the global file. Default is `enable`.
+ * `e10_cache_path`:            used to define the pathname of the cache file in the local file system.
+ * `e10_cache_flush_flag`:      used to define when the cache synchronisation should start. `flush_immediate`
                                 will trigger cache synchronsiation immediately after the write operation
-                                returns. “flush_onclose” will start synchronisation when the file is closed.
-                                Default is “flush_immediate”.
- * e10_cache_discard_flag:      used to “enable” or “disable” cache file deletion from the local file system 
-                                when the file is closed. Default is “enable”
- * e10_cache_threads:           used to define the number of threads in the synchronisation pool. Default is
-                                “1” thread.
+                                returns. `flush_onclose` will start synchronisation when the file is closed.
+                                Default is `flush_immediate`.
+ * `e10_cache_discard_flag`:    used to `enable` or `disable` cache file deletion from the local file system 
+                                when the file is closed. Default is `enable`
+ * `e10_cache_threads`:         used to define the number of threads in the synchronisation pool. Default is
+                                `1` thread.
 
 
 Provided packages
@@ -88,88 +88,88 @@ Nevertheless, an additional ADIO driver supporting the BeeGFS file system from F
 implemented.
 
 The base code of ROMIO has been extended to provide all the mechanisms supporting the new MPI-IO hints. For example, 
-the MPI_File descriptor of type `struct ADIO_FileD` has been extended with an additional `cache_fd` of the same type
-to contain the file handle of the local cache file. When the file is open with MPI_File_open() the new implementation
+the `MPI_File` descriptor of type `struct ADIO_FileD` has been extended with an additional `cache_fd` of the same type
+to contain the file handle of the local cache file. When the file is open with `MPI_File_open()` the new implementation
 will try to open an additional local file to contain cache data. If the local open fails the standard open is performed.
 
-The just described mechanism is implemented in the “adio/common/ad_opencoll.c” file. Furthermore, a synchronisation 
+The just described mechanism is implemented in the `adio/common/ad_opencoll.c` file. Furthermore, a synchronisation 
 thread pool is also started to take care of the cache synchronisation to the global file. Each thread in the pool 
-is of type ADIOI_Sync_thread_t, defined in adio/include/adi_thread.h. This data structure provides different APIs to 
+is of type `ADIOI_Sync_thread_t`, defined in `adio/include/adi_thread.h`. This data structure provides different APIs to 
 the main thread as well as the synchronisation thread (described in more detail later in the document).
 
 The write routine in ROMIO has also been modified to redirect data to the cache_fd and to create and submit sync 
-requests to the thread pool. Synchronisation requests are of type ADIOI_Sync_req_t. This data structure also provides
+requests to the thread pool. Synchronisation requests are of type `ADIOI_Sync_req_t`. This data structure also provides
 a set of dedicated APIs to, e.g., initialise and finalise synchronisation requests.
 
 The MPI-IO close and sync routines have been modified to flush the cache file to the global file and wait for flush 
-to complete. MPI_File_close() for example will now start ADIO_GEN_Flush() which will internally use the sync thread
+to complete. `MPI_File_close()` for example will now start `ADIO_GEN_Flush()` which will internally use the sync thread
 APIs to flush the cache and wait for completion.
 
 
-ADIOI_Sync_thread_t APIs (adio/common/adi_cache_sync.c)
+`ADIOI_Sync_thread_t` APIs (`adio/common/adi_cache_sync.c`)
 -------------------------------------------------------
 
-* ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...): initialise a new sync thread. The new thread contains three queue.
-  A pending queue (pen_) which receives ADIOI_Sync_req_t(s) from the main thread and buffers them, a submitted queue (sub_)
-  that contains requests that have been flushed and are thus ready to be satisfied and a wait queue (wait_) that contains
-  a copy of the pointer of the ADIOI_Sync_req_t(s) that have been inserted in the sub_ queue. This queue is used to check 
-  the completion of requests when MPI_Wait() is invoked.
-  The init routine also starts a posix thread passing it a pointer to the ADIOI_Sync_thread_start() routine. This will 
-  continuously check for new sync requests in the sub_ queue.
+* `ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...)`: initialise a new sync thread. The new thread contains three queue.
+  A pending queue (`pen_`) which receives `ADIOI_Sync_req_t`(s) from the main thread and buffers them, a submitted queue (`sub_`)
+  that contains requests that have been flushed and are thus ready to be satisfied and a wait queue (`wait_`) that contains
+  a copy of the pointer of the `ADIOI_Sync_req_t`(s) that have been inserted in the sub_ queue. This queue is used to check 
+  the completion of requests when `MPI_Wait()` is invoked.
+  The init routine also starts a posix thread passing it a pointer to the `ADIOI_Sync_thread_start()` routine. This will 
+  continuously check for new sync requests in the `sub_` queue.
 
-* ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t): finilise a synchronisation thread. The finalisation process consists in
-  the creation and submission to the pen_ queue of a special type of ADIOI_Sync_req_t that will shutdown the posix thread.
+* `ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t)`: finilise a synchronisation thread. The finalisation process consists in
+  the creation and submission to the `pen_` queue of a special type of `ADIOI_Sync_req_t` that will shutdown the posix thread.
 
-* ADIOI_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r): add a new request to the pen_ queue.
+* `ADIOI_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r)`: add a new request to the `pen_` queue.
 
-* ADIOI_Sync_thread_flush(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r): move all the sync request in the pen_ queue to the 
-  sub_ queue.
+* `ADIOI_Sync_thread_flush(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r)`: move all the sync request in the `pen_` queue to the 
+  `sub_` queue.
 
-* ADIOI_Sync_thread_wait(ADIOI_Sync_thread_t t): wait for all the requests in the sub_ queue to be completed. This is done
-  by MPI_Wait() on every request in the wait_ queue.
+* `ADIOI_Sync_thread_wait(ADIOI_Sync_thread_t t)`: wait for all the requests in the `sub_` queue to be completed. This is done
+  by `MPI_Wait()` on every request in the `wait_` queue.
 
 
-ADIOI_Sync_req_t APIs (adio/common/adi_atomic_queue.c)
+`ADIOI_Sync_req_t` APIs (`adio/common/adi_atomic_queue.c`)
 ------------------------------------------------------
 
-* ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...): initialise a new sync request. Request can be of type ADIOI_THREAD_SYNC
-  or ADIOI_THREAD_SHUTDOWN to sync the cache or shut the thread down respectively.
+* `ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...)`: initialise a new sync request. Request can be of type `ADIOI_THREAD_SYNC`
+  or `ADIOI_THREAD_SHUTDOWN` to sync the cache or shut the thread down respectively.
 
-* ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r): finalise a sync request.
+* `ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r)`: finalise a sync request.
 
-* ADIOI_Sync_req_set(ADIOI_Sync_req_t r, ...): set a property of the sync request.
+* `ADIOI_Sync_req_set(ADIOI_Sync_req_t r, ...)`: set a property of the sync request.
 
-* ADIOI_Sync_req_get(ADIOI_Sync_req_t r, ...): get a property of the sync request.
+* `ADIOI_Sync_req_get(ADIOI_Sync_req_t r, ...)`: get a property of the sync request.
 
-* ADIOI_Sync_req_get_type(ADIOI_Sync_req_t r): get the type of request.
+* `ADIOI_Sync_req_get_type(ADIOI_Sync_req_t r)`: get the type of request.
 
 
-MPIWRAP (mpiwrap/mpiwrap.cpp)
+MPIWRAP (`mpiwrap/mpiwrap.cpp`)
 -----------------------------
 
 MPIWRAP is a wrapper library for MPI-IO. MPIWRAP can be used to pass the E10 hints to the application transparently. Hints
 can be defined in a configuration file in the Json format. Follow an example of configuration file:
 
-{
-    “Guardnames”: “test_file”,
-    “File”: [{
-        “Path”: “/work/deep47/test_file”,
-        “Type”: “MPI”,
-        “cb_buffer_size”: “4194304”,
-        “ind_wr_buffer_size”: “524288”,
-        “cb_nodes”: “64”,
-        “romio_cb_read”: “enable”,
-        “romio_cb_write”: “enable”,
-        “romio_no_indep_rw”: “true”,
-        “striping_unit”: “4194304”,
-        “striping_factor”: “4”,
-        “e10_cache”: “enable”,
-        “e10_cache_path”: “/scratch”,
-        “e10_cache_flush_flag”: “flush_immediate”,
-        “e10_cache_discard_flag”: “enable”,
-        “e10_cache_threads”: “1”
-    }]
-}
+      {
+          “Guardnames”: “test_file”,
+          “File”: [{
+              “Path”: “/work/deep47/test_file”,
+              “Type”: “MPI”,
+              “cb_buffer_size”: “4194304”,
+              “ind_wr_buffer_size”: “524288”,
+              “cb_nodes”: “64”,
+              “romio_cb_read”: “enable”,
+              “romio_cb_write”: “enable”,
+              “romio_no_indep_rw”: “true”,
+              “striping_unit”: “4194304”,
+              “striping_factor”: “4”,
+              “e10_cache”: “enable”,
+              “e10_cache_path”: “/scratch”,
+              “e10_cache_flush_flag”: “flush_immediate”,
+              “e10_cache_discard_flag”: “enable”,
+              “e10_cache_threads”: “1”
+          }]
+      }
 
 * Guardnames: is a special type of field. It is used to delay the MPI_File_close() operation inside MPIWRAP. This is required
               whenever the “e10_cache” hint is set to “enable” and the “e10_cache_flush_flag” is set to “flush_immediate”. In
