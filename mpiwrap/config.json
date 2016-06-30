@@ -1,0 +1,21 @@
+{
+        "Guardnames": "testfile",
+        "File": [
+        {
+                "Path": "/dir1/testfile",
+                "Type": "MPI",
+                "striping_factor": "4",
+                "striping_unit": "1048576",
+		"romio_cb_write": "enable",
+		"romio_cb_read": "enable",
+                "romio_no_indep_rw": "true",
+		"cb_buffer_size": "4194304",
+                "ind_wr_buffer_size: "524288",
+		"cb_nodes": "64",
+		"e10_cache": "enable",
+		"e10_cache_flush_flag": "flush_immediate",
+		"e10_cache_discard_flag": "enable",
+		"e10_cache_path": "/tmp",
+                "e10_cache_threads": "1"
+        }]
+}
