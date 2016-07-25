@@ -167,12 +167,12 @@ can be defined in a configuration file in the Json format. Follow an example of 
           }]
       }
 
-* Guardnames: is a special type of field. It is used to delay the MPI_File_close() operation inside MPIWRAP. This is required
-              whenever the “e10_cache” hint is set to “enable” and the “e10_cache_flush_flag” is set to “flush_immediate”. In
-              this case MPI_File_write_all() will return as soon as data has been written to the local cache file. Meanwhile
+* Guardnames: is a special type of field. It is used to delay the `MPI_File_close()` operation inside MPIWRAP. This is required
+              whenever the `e10_cache` hint is set to `enable` and the `e10_cache_flush_flag` is set to `flush_immediate`. In
+              this case `MPI_File_write_all()` will return as soon as data has been written to the local cache file. Meanwhile
               synchronisation is started by the thread pool. This requires a valid file handle to move the data thus the file
-              cannot be closed. Instead the wrapped MPI_File_close() will return MPI_SUCCESS without closing the file. The file
-              will be closed only when the next shared file is opened (before) in the wrapped MPI_File_open(). The Guardnames 
+              cannot be closed. Instead the wrapped `MPI_File_close()` will return `MPI_SUCCESS` without closing the file. The file
+              will be closed only when the next shared file is opened (before) in the wrapped `MPI_File_open()`. The Guardnames 
               field contains the base name of the shared files written by the application. Performing this open/close modification
               behind the scenes MPIWRAP can make sure cache synchronisation is overlapped with computation.
 
