@@ -1,6 +1,6 @@
 /*
  *  (C) 2014-2016 Seagate Systems UK Ltd.
- *      See COPYRIGHT in top-level directory.
+ *      See COPYRIGHT in this directory.
  *
  *  Author: Giuseppe Congiu <giuseppe.congiu@seagate.com>
  *

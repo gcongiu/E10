@@ -1,7 +1,6 @@
 MPIWRAP v0.1
 
-Description
------------
+#Description
 MPIWRAP is a wrapper library for MPI. Using MPIWRAP, MPI-IO hints can be passed to the
 underlying ROMIO layer transparently, without any need of modifying the application''s
 source code. Users can define the set of MPI-IO hints they wish to use in a configuration
@@ -9,13 +8,11 @@ file (structured using the json format) and pass this file to MPIWRAP using an e
 variable.
 
 
-Requirements
-------------
+#Requirements
 MPIWRAP requires libjsoncpp-dev.
 
 
-Compiling and installing MPIWRAP
---------------------------------
+#Compiling and installing MPIWRAP
 MPIWRAP can work in three different modes. Each mode can be selected using a compilation
 flag. In particular MPIWRAP supports:
 
@@ -46,16 +43,14 @@ flag. In particular MPIWRAP supports:
                 $ make with_darshan && make install
 
 
-Compiling applications
-----------------------
+#Compiling applications
 Applications use MPIWRAP by simply adding the `libmpiwrap.so` library in the list of dependent
 libraries, i.e.:
 
                 $ gcc -o main main.cc -L$INSTALL_DIR/lib -lmpiwrap
 
 
-Running applications
---------------------
+#Running applications
 Users can pass the configuration file containing to the application by exporting its full
 pathname to the `MPI_HINTS_CONFIG` environment variable:
 
@@ -67,8 +62,7 @@ configuration file to see if there are hints defined for it. If this is the case
 will be passed to the `PMPI_File_open()` routine.
 
 
-Additional features
--------------------
+#Additional features
 To support E10 hints MPIWRAP can also modify the open/close sequence for files. In particular
 for checkpoint files, identified as `Guardnames` in the configuration file, the close operation
 will be postponed before the open of the next checkpoint file. This is done to allow the E10

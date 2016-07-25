@@ -35,11 +35,7 @@ implementation, used by the UFS driver as well as other file system drivers.
              v     |        |     +------------+ |
             ---    +--------+--------------------+
                    |                             |
-                   |        DEEP-ER Cache        |
-                   |                             |
-                   +-----------------------------+
-                   |                             |
-                   |         Parallel FS         |
+                   |          POSIX I/O          |
                    |                             |
                    +-----------------------------+
                  Figure 1: Exascale10 software stack
