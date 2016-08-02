@@ -271,7 +271,7 @@ if __name__ == "__main__":
 
     ind_buf_size = ind_buffer.count(',') + 1
     if ind_buf_size > 1:
-        ind_buffer = [int(x) for x in ind_buffer.replace('[','').replace(']','').replace(' ','').split(',', ind_buffer)]
+        ind_buffer = [int(x) for x in ind_buffer.replace('[','').replace(']','').replace(' ','').split(',', ind_buf_size)]
     elif ind_buf_size == 1:
         ind_buffer = [int(ind_buffer.replace('[','').replace(']',''))]
     #print ind_buffer
