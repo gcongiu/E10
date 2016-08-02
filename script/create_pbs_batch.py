@@ -65,6 +65,9 @@ pbs_content_mogon = '''
 #BSUB -n %s
 #BSUB -R "span[ptile=%s]"
 #BSUB -R "rusage[ramdisk=%s]"
+#BSUB -R select[mem>1672]
+#BSUB -R rusage[mem=1672]
+#BSUB -R affinity[core(8)]
 #BSUB -u giuseppe.congiu@seagate.com
 #BSUB -N
 
@@ -81,7 +84,6 @@ mpirun -env MPI_HINTS_CONFIG %s %s %s
 sed -i 's/'"`echo $LSB_JOBID`"'/LSB_JOBID/' %s
 
 mv %s.clog2 %s.clog2
-
 
 # replace_me_with_* fields are benchmark dependent and
 # should be customised after this script using the
