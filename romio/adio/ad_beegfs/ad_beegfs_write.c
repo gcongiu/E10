@@ -111,15 +111,11 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
 	/* init sync req */
 	ADIOI_Sync_req_init(&sub, command, offset, datatype, count, r, flush_flags);
 
-	if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHIMMEDIATE) {
-	    /* enqueue sync request to BEEGFS deamon and flush */
-	    ADIOI_BEEGFS_Sync_thread_enqueue(*(fd->thread_pool), sub);
+	/* enqueue sync request to BEEGFS deamon and flush */
+	ADIOI_BEEGFS_Sync_thread_enqueue(*(fd->thread_pool), sub);
+
+	if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHIMMEDIATE)
 	    ADIOI_BEEGFS_Sync_thread_flush(*(fd->thread_pool));
-	}
-	else if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHONCLOSE) {
-	    /* enqueue sync request to BEEGFS deamon */
-	    ADIOI_BEEGFS_Sync_thread_enqueue(*(fd->thread_pool), sub);
-	}
     }
 
 #ifdef HAVE_STATUS_SET_BYTES

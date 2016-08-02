@@ -249,7 +249,7 @@ if __name__ == "__main__":
     if cluster == "mogon":
         cachedir = os.path.abspath('/jobdir')+'/LSB_JOBID'+'/ramdisk'
     elif cluster == "deep":
-        cachedir      = os.getenv("CACHE_DIR")
+        cachedir = os.getenv("CACHE_DIR")
 
     if args is None:
         args = ""
@@ -257,23 +257,23 @@ if __name__ == "__main__":
     # convert string into array of int '[8, 16, 32, 64]' -> [8, 16, 32, 64]
     aggr_size = aggregators.count(',') + 1
     if aggr_size > 1:
-        aggregators = [int(x) for x in aggregators.replace(']','').replace('[','').replace(' ','').split(',', aggr_size)]
+        aggregators = [int(x) for x in aggregators.replace('[','').replace(']','').replace(' ','').split(',', aggr_size)]
     elif aggr_size == 1:
-        aggregators = [int(aggregators.replace('[','').replace('[',''))]
+        aggregators = [int(aggregators.replace('[','').replace(']',''))]
     #print aggregators
 
     col_buf_size = col_buffer.count(',') + 1
     if col_buf_size > 1:
-        col_buffer = [int(x) for x in col_buffer.replace(']','').replace('[','').replace(' ','').split(',', col_buf_size)]
+        col_buffer = [int(x) for x in col_buffer.replace('[','').replace(']','').replace(' ','').split(',', col_buf_size)]
     elif col_buf_size == 1:
-        col_buffer = [int(col_buffer.replace(']','').replace('[',''))]
+        col_buffer = [int(col_buffer.replace('[','').replace(']',''))]
     #print col_buffer
 
     ind_buf_size = ind_buffer.count(',') + 1
     if ind_buf_size > 1:
-        ind_buffer = [int(x) for x in ind_buffer.replace(']','').replace('[','').replace(' ','').split(',', ind_buffer)]
+        ind_buffer = [int(x) for x in ind_buffer.replace('[','').replace(']','').replace(' ','').split(',', ind_buffer)]
     elif ind_buf_size == 1:
-        ind_buffer = [int(ind_buffer.replace(']','').replace('[',''))]
+        ind_buffer = [int(ind_buffer.replace('[','').replace(']',''))]
     #print ind_buffer
 
     # convert string into array of char '[enable, disable]' -> ['enable', 'disable']
