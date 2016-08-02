@@ -1,8 +1,6 @@
-Exascale10 base code release v0.1
----------------------------------
+#Exascale10 base code release v0.1
 
-Introduction
-------------
+#Introduction
 
 Exascale10 is part of the FP7 EU funded DEEP-ER project (Grant Agreement n. 610467).
 
@@ -18,22 +16,30 @@ and more generally, any I/O operation. The new memory tier in the DEEP-ER Protot
 available to applications through the MPI-IO interface by means of additional hints, described 
 in detail in the rest of this document. The new hints rely on the underlying Exascale10 code 
 inside ROMIO to efficiently move data to and from the cache layer. Figure 1 shows the E10
-software stack. The Exascale10 code comes in the form a ADIO plugin in the existing “common”
+software stack. The Exascale10 code comes in the form a ADIO plugin in the existing GEN layer
 implementation, used by the UFS driver as well as other file system drivers.
 
+                   +-----------------------------+
+                   |                             |
+                   |           MPIWRAP           |
+                   |                             |
             ---    +-----------------------------+
              ^     |                             |
              |     |           MPI-IO            |
              |     |                             |
              |     +-----------------------------+
              |     |                             |
-           ROMIO   |  ADIO (Abstract Device IO)  |
+             |     |  ADIO (Abstract Device IO)  |
              |     |                             |
-             |     +--------+--------------------+
-             |     |        |     +------------+ |
-             |     | BEEGFS | UFS | E10 Plugin | |
-             v     |        |     +------------+ |
-            ---    +--------+--------------------+
+           ROMIO   +----------+----------+-------+
+             |     |          |          |       |
+             |     |  BEEGFS  |  Lustre  |  UFS  |
+             |     |          |          |       |
+             |     +----------+----------+-------+
+             |     |             +------------+  |
+             |     |  GEN layer  | E10 Plugin |  |
+             v     |             +------------+  |
+            ---    +-----------------------------+
                    |                             |
                    |          POSIX I/O          |
                    |                             |
@@ -41,8 +47,7 @@ implementation, used by the UFS driver as well as other file system drivers.
                  Figure 1: Exascale10 software stack
 
 
-Exascale10 hints extensions for MPI-IO
---------------------------------------
+#Exascale10 hints extensions for MPI-IO
 
 The Exascale10 hints extension for MPI-IO represents the only way users can access the DEEP-ER cache 
 layer through MPI-IO. There is currently no additional API, although for the future it is planned to 
@@ -64,8 +69,7 @@ implementation. Follows a list of hints and corresponding description:
                                 `1` thread.
 
 
-Provided packages
------------------
+#Provided packages
 
 The Exascale10 distribution contains the following packages:
 
@@ -76,8 +80,7 @@ The Exascale10 distribution contains the following packages:
  * script package containing utility scripts to generate batch scripts and to process mpe log files
 
 
-ROMIO
------
+#ROMIO
 
 The Exascale10 modifications to the ROMIO code are mainly targeted to the “common” implementation (i.e. adio/common).
 Nevertheless, an additional ADIO driver supporting the BeeGFS file system from Fraunhofer ITMW has also been 
@@ -102,8 +105,7 @@ to complete. `MPI_File_close()` for example will now start `ADIO_GEN_Flush()` wh
 APIs to flush the cache and wait for completion.
 
 
-`ADIOI_Sync_thread_t` APIs (`adio/common/adi_cache_sync.c`)
--------------------------------------------------------
+##`ADIOI_Sync_thread_t` APIs (`adio/common/adi_cache_sync.c`)
 
 * `ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...)`: initialise a new sync thread. The new thread contains three queue.
   A pending queue (`pen_`) which receives `ADIOI_Sync_req_t`(s) from the main thread and buffers them, a submitted queue (`sub_`)
@@ -125,8 +127,7 @@ APIs to flush the cache and wait for completion.
   by `MPI_Wait()` on every request in the `wait_` queue.
 
 
-`ADIOI_Sync_req_t` APIs (`adio/common/adi_atomic_queue.c`)
-------------------------------------------------------
+##`ADIOI_Sync_req_t` APIs (`adio/common/adi_atomic_queue.c`)
 
 * `ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...)`: initialise a new sync request. Request can be of type `ADIOI_THREAD_SYNC`
   or `ADIOI_THREAD_SHUTDOWN` to sync the cache or shut the thread down respectively.
@@ -140,8 +141,7 @@ APIs to flush the cache and wait for completion.
 * `ADIOI_Sync_req_get_type(ADIOI_Sync_req_t r)`: get the type of request.
 
 
-MPIWRAP (`mpiwrap/mpiwrap.cpp`)
------------------------------
+#MPIWRAP (`mpiwrap/mpiwrap.cpp`)
 
 MPIWRAP is a wrapper library for MPI-IO. MPIWRAP can be used to pass the E10 hints to the application transparently. Hints
 can be defined in a configuration file in the Json format. Follow an example of configuration file:
