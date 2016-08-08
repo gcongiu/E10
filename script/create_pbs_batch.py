@@ -18,7 +18,7 @@ pbs_content = '''
 #PBS -e %s.err
 #PBS -o %s.log
 #PBS -l walltime=00:30:00
-#PBS -l nodes=%s:ppn=%s
+#PBS -l nodes=%s:ppn=%s:cluster
 #PBS -m abe
 #PBS -M giuseppe.congiu@seagate.com
 #PBS -v MPE_TMPDIR=$HOME/.tmp

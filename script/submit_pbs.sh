@@ -48,7 +48,7 @@ elif [ "$cluster" == "mogon" ]
 then
     # submit the first job
     out=`bsub < ${script[0]}`
-    job=`echo $out | sed -E 's/Job\s+<([0-9]+)>\s+.+/\1/')`
+    job=`echo $out | sed -E 's/Job\s+<([0-9]+)>\s+.+/\1/'`
 fi
 
 # submit all the remaining jobs
