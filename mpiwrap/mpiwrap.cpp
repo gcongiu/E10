@@ -392,7 +392,7 @@ int MPI_Finalize( void )
 		/* close the corresponding file */
 		_MPI_File_close( local_fh );
 
-		o_time += MPI_Wtime( ) - stim;
+		c_time += MPI_Wtime( ) - stim;
 
 		/* free the handle */
 		if( local_fh )
