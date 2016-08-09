@@ -1,4 +1,4 @@
-all: coll_perf_cache coll_perf
+all: coll_perf
 
 .PHONY: coll_perf coll_perf_dbg
 
