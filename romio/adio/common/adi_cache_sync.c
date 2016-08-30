@@ -243,7 +243,7 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 	/* get a new sync request */
 //	if ((r = ADIOI_Atomic_queue_front(q)) == NULL)
 //	    continue;
-	r = ADIOI_Atomic_queue_front(t);
+	r = ADIOI_Atomic_queue_front(q);
 
 	/* pop sync request */
 	ADIOI_Atomic_queue_pop(q);

@@ -43,7 +43,7 @@ void ADIOI_BEEGFS_Open( ADIO_File fd, int *error_code )
 	deeper_cache_open( fd->filename, amode, perm, fd->cache_oflags ) :
 	open( fd->filename, amode, perm );
 
-    if( fd->sys == DEEPER_RETVAL_SUCCESS )
+    if( fd->fd_sys == DEEPER_RETVAL_SUCCESS )
 	ADIOI_BEEGFS_Sync_thread_init( fd->thread_pool, &fd );
 #else
     fd->fd_sys = open( fd->filename, amode, perm );
