@@ -30,7 +30,7 @@ if __name__ == "__main__":
         csv.append('%s.csv'%line.strip())
         if mode == 'all' and os.path.exists(line.strip()):
             print 'processing %s'%line.strip()
-            os.system('/homec/deep/deep47/E10/trunk/scripts/from_clog2_to_csv.py -f %s'%line.strip())
+            os.system('/homec/deep/deep47/scripts/from_clog2_to_csv.py -f %s'%line.strip())
 
     # close files
     files.close()
@@ -67,7 +67,6 @@ if __name__ == "__main__":
     aggregators = 0 # tot number of aggregators
     count_wr = 0    # parsed number of aggregators
     count_rd = 0
-    i = 0
 
     line_regex = re.compile('([A-Za-z\_]+),([0-9]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+),([0-9\.\-e]+)')
 
@@ -88,7 +87,7 @@ if __name__ == "__main__":
                 #print res.group(1)+' '+res.group(2)+' '+res.group(3)+' '+res.group(4)+' '+res.group(5)+' '+res.group(6)+' '+res.group(7)+' '+res.group(8)+' '+res.group(9)+' '+res.group(10)+' '+res.group(11)
 		io_time = float(res.group(12)) + float(res.group(16))
                 if count_wr < aggregators:
-                    if i < 3 and io_time > (write_max['tot']+write_max['non_hid_sync']) and float(res.group(4)) > write_max['all2all'] :
+                    if io_time > (write_max['tot']+write_max['non_hid_sync']) and float(res.group(4)) > write_max['all2all'] :
                         write_max['startup']   = float(res.group(3))
                         write_max['all2all']   = float(res.group(4))
                         write_max['send']      = float(res.group(5))
@@ -145,7 +144,6 @@ if __name__ == "__main__":
                     sync_max['tot']        = 0
                     count_wr               = 0
                     wr_buf                 = []
-                    i                      += 1
             elif res is not None and (res.group(1) == 'MPI_File_read_all' or res.group(1) == 'MPI_File_read_at_all'):
                 #print res.group(1)+' '+res.group(2)+' '+res.group(3)+' '+res.group(4)+' '+res.group(5)+' '+res.group(6)+' '+res.group(7)
                 elapsed = float(res.group(12))

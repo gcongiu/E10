@@ -291,8 +291,8 @@ int main( int argc, char **argv )
 
                 /* emulates computing */
                 stim = MPI_Wtime( );
-		//usleep( delay );
-		( void )matrix_mult( A, B, N, C );
+		usleep( delay );
+		//( void )matrix_mult( A, B, N, C );
 		dtim += MPI_Wtime( ) - stim;
 
 		i += 1;
