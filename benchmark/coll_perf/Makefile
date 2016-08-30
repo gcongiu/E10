@@ -1,6 +1,6 @@
 all: coll_perf
 
-.PHONY: coll_perf
+.PHONY: coll_perf coll_perf_dbg
 
 LDFLAGS=-llmpe -lmpe -lmatrix_mult
 LIBMPE=$(LDFLAGS)

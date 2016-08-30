@@ -387,8 +387,12 @@ int MPI_Finalize( void )
 		/* get MPI file handle */
 		MPI_File *local_fh = ofiles_->front( );
 
+		stim = MPI_Wtime( );
+
 		/* close the corresponding file */
 		_MPI_File_close( local_fh );
+
+		c_time += MPI_Wtime( ) - stim;
 
 		/* free the handle */
 		if( local_fh )

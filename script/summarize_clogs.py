@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 aggregator = res.group(2)
             if res is not None and (res.group(1) == 'MPI_File_write_all' or res.group(1) == 'MPI_File_write_at_all'):
                 #print res.group(1)+' '+res.group(2)+' '+res.group(3)+' '+res.group(4)+' '+res.group(5)+' '+res.group(6)+' '+res.group(7)+' '+res.group(8)+' '+res.group(9)+' '+res.group(10)+' '+res.group(11)
-		io_time = float(res.group(12)) + float(res.group(16))
+                io_time = float(res.group(12)) + float(res.group(16))
                 if count_wr < aggregators:
                     if io_time > (write_max['tot']+write_max['non_hid_sync']) and float(res.group(4)) > write_max['all2all'] :
                         write_max['startup']   = float(res.group(3))
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                         sync_max['read']       = float(res.group(13))
                         sync_max['write']      = float(res.group(14))
                         sync_max['tot']        = float(res.group(15))
-			write_max['non_hid_sync'] = float(res.group(16))
+                        write_max['non_hid_sync'] = float(res.group(16))
                     # compute posix write min and max
                     #if float(res.group(10)) > wr_max:
                     #    wr_max = float(res.group(10))
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     write['write']     += write_max['write']
                     write['post_write']+= write_max['post_write']
                     write['tot']       += write_max['tot']
-		    write['non_hid_sync'] += write_max['non_hid_sync']
+                    write['non_hid_sync'] += write_max['non_hid_sync']
                     write['num']       += 1
                     sync['read']       += sync_max['read']
                     sync['write']      += sync_max['write']
@@ -137,7 +137,7 @@ if __name__ == "__main__":
                     write_max['exch']      = 0
                     write_max['write']     = 0
                     write_max['post_write']= 0
-		    write_max['non_hid_sync']  = 0
+                    write_max['non_hid_sync']  = 0
                     write_max['tot']       = 0
                     sync_max['read']       = 0
                     sync_max['write']      = 0
@@ -204,12 +204,12 @@ if __name__ == "__main__":
                   ','+str(write['exch'] / write['num'])+\
                   ','+str(write['write'] / write['num'])+\
                   ','+str(write['post_write'] / write['num'])+\
-		  ','+str(write['tot'] / write['num'])+\
+                  ','+str(write['tot'] / write['num'])+\
                   ','+str(wr_std / write['num'])+\
                   ','+str(sync['read'] / write['num'])+\
                   ','+str(sync['write'] / write['num'])+\
                   ','+str(sync['tot'] / write['num'])+\
-		  ','+str(write['non_hid_sync'] / write['num'])+\
+                  ','+str(write['non_hid_sync'] / write['num'])+\
                   '\n')
 
         read['startup'] = 0.0
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         write['exch'] = 0.0
         write['write'] = 0.0
         write['post_write'] = 0.0
-	write['non_hid_sync'] = 0.0
+        write['non_hid_sync'] = 0.0
         write['tot'] = 0
         write['num'] = 0
         read['tot'] = 0.0
