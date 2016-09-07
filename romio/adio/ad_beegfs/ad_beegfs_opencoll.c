@@ -8,6 +8,7 @@
 
 #include "adio.h"
 #include "ad_beegfs.h"
+#include <libgen.h>
 
 /* BeeGFS version of a "collective open" */
 void ADIOI_BEEGFS_OpenColl(ADIO_File fd,
@@ -40,10 +41,6 @@ fn_open:
             else
                 fd->access_mode = access_mode;
 
-	    /* set MPI_COMM_SELF for open operation */
-            tmp_comm = fd->comm;
-            fd->comm = MPI_COMM_SELF;
-
 	    /* Prefetch the file's parent dir in the e10_cache FS */
             if(fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
                 pflags = DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT;
@@ -53,7 +50,13 @@ fn_open:
                 /* Flush the file in the e10_cache FS to the global FS */
                 fd->cache_oflags = DEEPER_OPEN_FLUSHONCLOSE |
                                        DEEPER_OPEN_FLUSHWAIT;
+	    } else {
+		ret = DEEPER_RETVAL_SUCCESS;
 	    }
+
+	    /* set MPI_COMM_SELF for open operation */
+            tmp_comm = fd->comm;
+            fd->comm = MPI_COMM_SELF;
 
 	    if (ret == DEEPER_RETVAL_SUCCESS ||
 		(ret == DEEPER_RETVAL_ERROR && errno == EEXIST)) {
@@ -76,37 +79,36 @@ fn_open:
                                                    strerror(errno));
                 /* -END ERROR HANDLING- */
             }
-        }
 
-	/* restore mpi communicator */
-        fd->comm = tmp_comm;
+	    /* restore mpi communicator */
+	    fd->comm = tmp_comm;
 
-	/* broadcast open result */
-	MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
+	    /* if no error, close the file and reopen normally below */
+	    if(*error_code == MPI_SUCCESS)
+		(*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
 
-        /* if no error, close the file and reopen normally below */
-        if(*error_code == MPI_SUCCESS)
-            (*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
+	    /* broadcast open result */
+	    MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
 
-        fd->access_mode = access_mode; /* back to original */
-    }
-    else
-        MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
+	    fd->access_mode = access_mode; /* back to original */
+	}
+	else MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
 
-    if (*error_code != MPI_SUCCESS) {
-        if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-            ADIOI_Info_set(fd->info, "e10_cache", "disable");
-            fd->hints->e10_cache = ADIOI_HINT_DISABLE;
-            goto fn_open; /* retry using POSIX open */
-        }
-        else
-            goto fn_exit; /* exit */
-    }
-    else {
-        /* turn off CREAT (and EXCL if set) for real multi-processor open */
-        access_mode ^= ADIO_CREATE;
-        if (access_mode & ADIO_EXCL)
-            access_mode ^= ADIO_EXCL;
+	if (*error_code != MPI_SUCCESS) {
+	    if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
+		ADIOI_Info_set(fd->info, "e10_cache", "disable");
+		fd->hints->e10_cache = ADIOI_HINT_DISABLE;
+		goto fn_open; /* retry using POSIX open */
+	    }
+	    else
+		goto fn_exit; /* exit */
+	}
+	else {
+	    /* turn off CREAT (and EXCL if set) for real multi-processor open */
+	    access_mode ^= ADIO_CREATE;
+	    if (access_mode & ADIO_EXCL)
+		access_mode ^= ADIO_EXCL;
+	}
     }
 
     /* if we are doing deferred open, non-aggregators should return now */
@@ -139,10 +141,12 @@ fn_open:
     /* Now everyone opens the file created before */
     if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
         /* Prefetch the file in the cache FS */
+	//ret = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
         ret = deeper_cache_prefetch(fd->filename, DEEPER_PREFETCH_WAIT);
 
         if (ret == DEEPER_RETVAL_ERROR)
-            FPRINTF(stderr, "Error while prefetching %s: %s\n",
+            FPRINTF(stderr, "[rank:%d]Error while prefetching %s: %s\n",
+		    rank,
                     fd->filename,
                     strerror(errno));
 

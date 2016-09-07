@@ -47,6 +47,7 @@ int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
     ADIOI_Atomic_queue_fini(&((*t)->pen_));
     ADIOI_Atomic_queue_fini(&((*t)->wait_));
     ADIOI_Free(*t);
+    *t = NULL;
 
     return MPI_SUCCESS;
 }

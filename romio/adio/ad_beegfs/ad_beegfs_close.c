@@ -27,7 +27,11 @@ void ADIOI_BEEGFS_Close( ADIO_File fd, int *error_code )
 	    deeper_cache_close( fd->fd_sys ) :
 	    close( fd->fd_sys );
 
-    ADIOI_BEEGFS_Sync_thread_fini( fd->thread_pool );
+    if ( fd->thread_pool ) {
+        ADIOI_BEEGFS_Sync_thread_fini( &fd->thread_pool[0] );
+	ADIOI_Free(fd->thread_pool);
+    }
+
 #else
     close( fd->fd_sys );
 #endif

@@ -43,8 +43,10 @@ void ADIOI_BEEGFS_Open( ADIO_File fd, int *error_code )
 	deeper_cache_open( fd->filename, amode, perm, fd->cache_oflags ) :
 	open( fd->filename, amode, perm );
 
-    if( fd->fd_sys == DEEPER_RETVAL_SUCCESS )
-	ADIOI_BEEGFS_Sync_thread_init( fd->thread_pool, &fd );
+    if( fd->fd_sys != DEEPER_RETVAL_ERROR && fd->hints->e10_cache == ADIOI_HINT_ENABLE ) {
+	fd->thread_pool = (ADIOI_Sync_thread_t *)ADIOI_Malloc(sizeof(ADIOI_Sync_thread_t));
+	ADIOI_BEEGFS_Sync_thread_init( &fd->thread_pool[0], fd );
+    }
 #else
     fd->fd_sys = open( fd->filename, amode, perm );
 #endif
@@ -54,7 +56,7 @@ void ADIOI_BEEGFS_Open( ADIO_File fd, int *error_code )
 #endif
     fd->fd_direct = -1;
 
-    if( fd->fd_sys == DEEPER_RETVAL_SUCCESS ) {
+    if( fd->fd_sys != DEEPER_RETVAL_ERROR ) {
         int err;
         struct BeegfsIoctl_GetStripeInfo_Arg getStripeInfo;
 
