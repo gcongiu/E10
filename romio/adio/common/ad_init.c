@@ -108,8 +108,12 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
         MPE_Log_get_state_eventIDs( &ADIOI_MPE_startup_a, &ADIOI_MPE_startup_b );
         MPE_Log_get_state_eventIDs( &ADIOI_MPE_alltoall_a, &ADIOI_MPE_alltoall_b );
         MPE_Log_get_state_eventIDs( &ADIOI_MPE_sync_a, &ADIOI_MPE_sync_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_syncread_a, &ADIOI_MPE_syncread_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_syncwrite_a, &ADIOI_MPE_syncwrite_b );
+        MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_read_a, &ADIOI_MPE_thread_read_b );
+        MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_write_a, &ADIOI_MPE_thread_write_b );
+	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_flush_a, &ADIOI_MPE_thread_flush_b );
+	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_wait_a, &ADIOI_MPE_thread_wait_b );
+	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_fsync_a, &ADIOI_MPE_thread_fsync_b );
+	MPE_Log_get_state_eventIDs( &ADIOI_MPE_fsync_a, &ADIOI_MPE_fsync_b );
 
         int  comm_world_rank;
         MPI_Comm_rank( MPI_COMM_WORLD, &comm_world_rank );
@@ -154,10 +158,18 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
                                 "ADIOI_ext2ph_all2all", "white" );
             MPE_Describe_state( ADIOI_MPE_sync_a, ADIOI_MPE_sync_b, 
                                 "ADIOI_e10_sync", "purple" );
-            MPE_Describe_state( ADIOI_MPE_syncread_a, ADIOI_MPE_syncread_b, 
-                                "ADIOI_e10_sync_read", "magenta" );
-            MPE_Describe_state( ADIOI_MPE_syncwrite_a, ADIOI_MPE_syncwrite_b, 
-                                "ADIOI_e10_sync_write", "plum" );
+            MPE_Describe_state( ADIOI_MPE_thread_read_a, ADIOI_MPE_thread_read_b, 
+                                "ADIOI_e10_thread_read", "magenta" );
+            MPE_Describe_state( ADIOI_MPE_thread_write_a, ADIOI_MPE_thread_write_b, 
+                                "ADIOI_e10_thread_write", "plum" );
+	    MPE_Describe_state( ADIOI_MPE_thread_flush_a, ADIOI_MPE_thread_flush_b,
+			    	"ADIOI_e10_thread_flush", "red" );
+	    MPE_Describe_state( ADIOI_MPE_thread_wait_a, ADIOI_MPE_thread_wait_b,
+			    	"ADIOI_e10_thread_wait", "yellow" );
+	    MPE_Describe_state( ADIOI_MPE_thread_fsync_a, ADIOI_MPE_thread_fsync_b,
+			    	"ADIOI_e10_thread_fsync", "purple" );
+	    MPE_Describe_state( ADIOI_MPE_fsync_a, ADIOI_MPE_fsync_b,
+			    	"ADIOI_fsync", "blue" );
 
         }
     }

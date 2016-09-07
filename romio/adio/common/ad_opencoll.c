@@ -64,9 +64,6 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	fd->cache_fd->agg_comm = MPI_COMM_NULL;
 	fd->cache_fd->access_mode = ADIO_CREATE | ADIO_RDWR;
 
-	/* init sync thread pool */
-	fd->thread_pool = NULL;
-
 	/* check discard flag and set delete on close for cache file */
 	if (fd->hints->e10_cache_discard_flag == ADIOI_HINT_ENABLE) {
 	    fd->cache_fd->access_mode |= ADIO_DELETE_ON_CLOSE;

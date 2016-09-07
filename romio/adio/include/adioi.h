@@ -876,10 +876,18 @@ int  ADIOI_MPE_alltoall_a;
 int  ADIOI_MPE_alltoall_b;
 int  ADIOI_MPE_sync_a;
 int  ADIOI_MPE_sync_b;
-int  ADIOI_MPE_syncread_a;
-int  ADIOI_MPE_syncread_b;
-int  ADIOI_MPE_syncwrite_a;
-int  ADIOI_MPE_syncwrite_b;
+int  ADIOI_MPE_thread_read_a;
+int  ADIOI_MPE_thread_read_b;
+int  ADIOI_MPE_thread_write_a;
+int  ADIOI_MPE_thread_write_b;
+int  ADIOI_MPE_thread_flush_a;
+int  ADIOI_MPE_thread_flush_b;
+int  ADIOI_MPE_thread_wait_a;
+int  ADIOI_MPE_thread_wait_b;
+int  ADIOI_MPE_thread_fsync_a;
+int  ADIOI_MPE_thread_fsync_b;
+int  ADIOI_MPE_fsync_a;
+int  ADIOI_MPE_fsync_b;
 #endif
 
 #ifdef ROMIO_INSIDE_MPICH

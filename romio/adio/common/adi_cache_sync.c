@@ -214,6 +214,9 @@ int ADIOI_Sync_thread_pool_fini(ADIO_File fd) {
     /* clean up memory */
     ADIOI_Free(fd->thread_pool);
 
+    /* reset to null */
+    fd->thread_pool = NULL;
+
 fn_exit:
     return MPI_SUCCESS;
 }
@@ -271,13 +274,20 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 	/* satisfy sync req */
 	while (bytes_xfered < len) {
 	    wr_count = (size_t)ADIOI_MIN(buf_size, len - bytes_xfered);
-
+#ifdef ADIOI_MPE_LOGGING
+	    MPE_Log_event(ADIOI_MPE_thread_read_a, 0, NULL);
+#endif
 	    /* read data from cache file */
 	    pread(t->fd_->cache_fd->fd_sys, buf, wr_count, offset);
-
+#ifdef ADIOI_MPE_LOGGING
+	    MPE_Log_event(ADIOI_MPE_thread_read_b, 0, NULL);
+	    MPE_Log_event(ADIOI_MPE_thread_write_a, 0, NULL);
+#endif
 	    /* write data to global file */
 	    pwrite(t->fd_->fd_sys, buf, wr_count, offset);
-
+#ifdef ADIOI_MPE_LOGGING
+	    MPE_Log_event(ADIOI_MPE_thread_write_b, 0, NULL);
+#endif
 	    /* update offset */
 	    bytes_xfered += (ADIO_Offset)wr_count;
 	    offset += (ADIO_Offset)wr_count;

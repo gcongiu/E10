@@ -71,6 +71,9 @@ MPI_File ADIO_Open(MPI_Comm orig_comm,
 
     fd->err_handler = ADIOI_DFLT_ERR_HANDLER;
 
+    /* init sync thread pool */
+    fd->thread_pool = NULL;
+
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &procs);
 /* create and initialize info object */
