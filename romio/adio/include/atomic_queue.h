@@ -27,7 +27,6 @@ typedef struct ADIOI_Sync_req *ADIOI_Sync_req_t;
 int ADIOI_Sync_req_init(ADIOI_Sync_req_t *, ...);
 int ADIOI_Sync_req_init_from(ADIOI_Sync_req_t *, ADIOI_Sync_req_t);
 int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *);
-int ADIOI_Sync_req_get_type(ADIOI_Sync_req_t);
 int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t, ...);
 int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t, ...);
 

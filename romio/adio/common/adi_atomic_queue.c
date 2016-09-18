@@ -32,27 +32,25 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
     type = va_arg(args, int);
 
     switch (type) {
-	case ADIOI_THREAD_SYNC:
-	    {
-		ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
-			type,
-			va_arg(args, ADIO_Offset),
-			va_arg(args, MPI_Datatype),
-			va_arg(args, int),
-			va_arg(args, ADIO_Request*),
-			MPI_SUCCESS,
-			va_arg(args, int));
-	    }
+	case ADIOI_THREAD_SYNC: {
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
+		    type,
+		    va_arg(args, ADIO_Offset),
+		    va_arg(args, MPI_Datatype),
+		    va_arg(args, int),
+		    va_arg(args, ADIO_Request*),
+		    MPI_SUCCESS,
+		    va_arg(args, int));
 	    break;
-	case ADIOI_THREAD_SHUTDOWN:
-	    {
-		ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_TYPE, type);
-		ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_REQ,
-			va_arg(args, ADIO_Request*));
-		ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ERR_CODE,
-		       	MPI_SUCCESS);
-	    }
+	}
+	case ADIOI_THREAD_SHUTDOWN: {
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_TYPE, type);
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_REQ,
+		    va_arg(args, ADIO_Request*));
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ERR_CODE,
+		    MPI_SUCCESS);
 	    break;
+	}
 	default:
 	    ret = ADIOI_SYNC_REQ_ERR;
     }
@@ -81,183 +79,123 @@ int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r) {
 }
 
 /*
- * ADIOI_Atomic_queue_get_type - return the type of the request
- */
-int ADIOI_Sync_req_get_type(ADIOI_Sync_req_t r) {
-
-    return r->type_;
-}
-
-/*
  * ADIOI_Atomic_queue_get_key - return the value for key in the request of type "type"
  *
- * INPUT 1 - type
+ * INPUT 1 - request
  * INPUT 2 - key
+ * OUTPUT 1..N - value(s)
  *
- * INPUT 1 -> ADIOI_THREAD_SYNC
- *   INPUT 2 -> ADIOI_SYNC_OFFSET
- *     OUTPUT 1 -> offset
- *   INPUT 2 -> ADIOI_SYNC_DATATYPE
- *     OUTPUT 1 -> datatype
- *   INPUT 2 -> ADIOI_SYNC_COUNT
- *     OUTPUT 1 -> count
- *   INPUT 2 -> ADIOI_SYNC_REQ
- *     OUTPUT 1 -> req (MPI_Request)
- *   INPUT 2 -> ADIOI_SYNC_ERR_CODE
- *     OUTPUT 1 -> error_code
- *   INPUT 2 -> ADIOI_SYNC_FFLAGS
- *     OUTPUT 1 -> fflags (BeeGFS)
- *   INPUT 2 -> ADIOI_SYNC_ALL
- *     OUTPUT 1 -> offset
- *     OUTPUT 2 -> datatype
- *     OUTPUT 3 -> count
- *     OUTPUT 4 -> req
- *     OUTPUT 5 -> error_code
- *     OUTPUT 6 -> fflags
- * INPUT 1 -> ADIOI_THREAD_SHUTDOWN
- *   INPUT 2 -> ADIOI_SYNC_REQ
- *     OUTPUT 1 -> req
- *   INPUT 2 -> ADIOI_SYNC_ERR_CODE
- *     OUTPUT 1 -> error_code
  */
 int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
 
     int *error_code, *count, *fflags, ret = MPI_SUCCESS;
-    int type, key;
+    int key, *type;
     ADIO_Offset *off;
     ADIO_Request **req;
     MPI_Datatype *datatype;
     va_list args;
 
     va_start(args, r);
-    type = va_arg(args, int);
     key = va_arg(args, int);
 
-    switch (type) {
-	case ADIOI_THREAD_SYNC:
-	    {
-		switch (key) {
-		    case ADIOI_SYNC_OFFSET:
-			{
-			    off = va_arg(args, ADIO_Offset *);
-			    *off = r->off_;
-			}
-			break;
-		    case ADIOI_SYNC_DATATYPE:
-			{
-			    datatype = va_arg(args, MPI_Datatype *);
-			    *datatype = r->datatype_;
-			}
-			break;
-		    case ADIOI_SYNC_COUNT:
-			{
-			    count = va_arg(args, int *);
-			    *count = r->count_;
-			}
-			break;
-		    case ADIOI_SYNC_REQ:
-			{
-			    req = va_arg(args, ADIO_Request **);
-			    *req = r->req_;
-			}
-			break;
-		    case ADIOI_SYNC_ERR_CODE:
-			{
-			    error_code = va_arg(args, int *);
-			    *error_code = r->error_code_;
-			}
-			break;
-		    case ADIOI_SYNC_FFLAGS:
-			{
-			    fflags = va_arg(args, int *);
-			    *fflags = r->fflags_;
-			}
-			break;
-		    case ADIOI_SYNC_ALL:
-			{
-			    /* get memory locations */
-			    off = va_arg(args, ADIO_Offset *);
-			    datatype = va_arg(args, MPI_Datatype *);
-			    count = va_arg(args, int *);
-			    req = va_arg(args, ADIO_Request **);
-			    error_code = va_arg(args, int *);
-			    fflags = va_arg(args, int *);
+    switch (key) {
+	case ADIOI_SYNC_TYPE: {
+	    type = va_arg(args, int *);
+	    *type = r->type_;
+	    break;
+	}
+	case ADIOI_SYNC_OFFSET: {
+	    if (r->type_ == ADIOI_THREAD_SYNC) {
+		off = va_arg(args, ADIO_Offset *);
+		*off = r->off_;
+	    } else {
+		off = NULL;
+		ret = -1;
+		errno = EINVAL;
+	    }
+	    break;
+	}
+	case ADIOI_SYNC_DATATYPE: {
+	    if (r->type_ == ADIOI_THREAD_SYNC) {
+		datatype = va_arg(args, MPI_Datatype *);
+		*datatype = r->datatype_;
+	    } else {
+		datatype = NULL;
+		ret = -1;
+		errno = EINVAL;
+	    }
+	    break;
+	}
+	case ADIOI_SYNC_COUNT: {
+	    if (r->type_ == ADIOI_THREAD_SYNC) {
+		count = va_arg(args, int *);
+		*count = r->count_;
+	    } else {
+		count = NULL;
+		ret = -1;
+		errno = EINVAL;
+	    }
+	    break;
+	}
+	case ADIOI_SYNC_REQ: {
+	    req = va_arg(args, ADIO_Request **);
+	    *req = r->req_;
+	    break;
+	}
+	case ADIOI_SYNC_ERR_CODE: {
+	    error_code = va_arg(args, int *);
+	    *error_code = r->error_code_;
+	    break;
+	}
+	case ADIOI_SYNC_FFLAGS: {
+	    fflags = va_arg(args, int *);
+	    *fflags = r->fflags_;
+	    break;
+	}
+	case ADIOI_SYNC_ALL: {
+	    if (r->type_ == ADIOI_THREAD_SYNC) {
+		off = va_arg(args, ADIO_Offset *);
+		datatype = va_arg(args, MPI_Datatype *);
+		count = va_arg(args, int *);
+		req = va_arg(args, ADIO_Request **);
+		error_code = va_arg(args, int *);
+		fflags = va_arg(args, int *);
 
-			    /* set values */
-			    *off = r->off_;
-			    *datatype = r->datatype_;
-			    *count = r->count_;
-			    *req = r->req_;
-			    *error_code = r->error_code_;
-			    *fflags = r->fflags_;
-			}
-			break;
-		    default:
-			ret = ADIOI_SYNC_REQ_ERR;
-		}
+		*off = r->off_;
+		*datatype = r->datatype_;
+		*count = r->count_;
+		*req = r->req_;
+		*error_code = r->error_code_;
+		*fflags = r->fflags_;
+	    } else {
+		off = NULL;
+		datatype = NULL;
+		count = NULL;
+		req = NULL;
+		error_code = NULL;
+		fflags = NULL;
+
+		ret = -1;
+		errno = EINVAL;
 	    }
 	    break;
-	case ADIOI_THREAD_SHUTDOWN:
-	    {
-		switch (key) {
-		    case ADIOI_SYNC_REQ:
-			{
-			    req = va_arg(args, ADIO_Request **);
-			    *req = r->req_;
-			}
-			break;
-		    case ADIOI_SYNC_ERR_CODE:
-			{
-			    error_code = va_arg(args, int *);
-			    *error_code = r->error_code_;
-			}
-			break;
-		    case ADIOI_SYNC_OFFSET:
-		    case ADIOI_SYNC_DATATYPE:
-		    case ADIOI_SYNC_COUNT:
-		    case ADIOI_SYNC_FFLAGS:
-		    case ADIOI_SYNC_ALL:
-		    default:
-			ret = ADIOI_SYNC_REQ_ERR;
-		}
-	    }
-	    break;
-	default:
-	    ret = ADIOI_SYNC_REQ_ERR;
+	}
+	default: {
+	    ret = -1;
+	    errno = EINVAL;
+	}
     }
-
-    va_end(args);
-
+	
     return ret;
 }
 
 /*
  * ADIOI_Sync_req_set_key - set the value for key
- * INPUT 1 - key
  *
- * INPUT 1 -> ADIOI_SYNC_OFFSET
- *   INPUT 2 -> offset
- * INPUT 1 -> ADIOI_SYNC_DATATYPE
- *   INPUT 2 -> datatype
- * INPUT 1 -> ADIOI_SYNC_COUNT
- *   INPUT 2 -> count
- * INPUT 1 -> ADIOI_SYNC_REQ
- *   INPUT 2 -> req (MPI_Request)
- * INPUT 1 -> ADIOI_SYNC_ERR_CODE
- *   INPUT 2 -> error_code
- * INPUT 1 -> ADIOI_SYNC_FFLAGS
- *   INPUT 2 -> fflags (BeeGFS)
- * INPUT 1 -> ADIOI_SYNC_ALL
- *     INPUT 2 -> offset
- *     INPUT 3 -> datatype
- *     INPUT 4 -> count
- *     INPUT 5 -> req
- *     INPUT 6 -> error_code
- *     INPUT 7 -> fflags
- * INPUT 1 -> ADIOI_SYNC_REQ
- *   INPUT 2 -> req
- * INPUT 1 -> ADIOI_SYNC_ERR_CODE
- *   INPUT 2 -> error_code
+ * INPUT 1 - request
+ * INPUT 2 - key
+ * INPUT 3..N - value(s)
+ *
  */
 int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
 
@@ -268,53 +206,45 @@ int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
     key = va_arg(args, int);
 
     switch (key) {
-	case ADIOI_SYNC_TYPE:
-	    {
-		r->type_ = va_arg(args, int);
-	    }
-	case ADIOI_SYNC_OFFSET:
-	    {
-	        r->off_ = va_arg(args, ADIO_Offset);
-	    }
+	case ADIOI_SYNC_TYPE: {
+	    r->type_ = va_arg(args, int);
+	}
+	case ADIOI_SYNC_OFFSET: {
+	    r->off_ = va_arg(args, ADIO_Offset);
 	    break;
-	case ADIOI_SYNC_DATATYPE:
-	    {
-		r->datatype_ = va_arg(args, MPI_Datatype);
-	    }
+	}
+	case ADIOI_SYNC_DATATYPE: {
+	    r->datatype_ = va_arg(args, MPI_Datatype);
 	    break;
-	case ADIOI_SYNC_COUNT:
-	    {
-		r->count_ = va_arg(args, int);
-	    }
+	}
+	case ADIOI_SYNC_COUNT: {
+	    r->count_ = va_arg(args, int);
 	    break;
-	case ADIOI_SYNC_REQ:
-	    {
-		r->req_ = va_arg(args, ADIO_Request *);
-	    }
+	}
+	case ADIOI_SYNC_REQ: {
+	    r->req_ = va_arg(args, ADIO_Request *);
 	    break;
-	case ADIOI_SYNC_ERR_CODE:
-	    {
-		r->error_code_ = va_arg(args, int);
-	    }
+	}
+	case ADIOI_SYNC_ERR_CODE: {
+	    r->error_code_ = va_arg(args, int);
 	    break;
-	case ADIOI_SYNC_FFLAGS:
-	    {
-		r->fflags_ = va_arg(args, int);
-	    }
+	}
+	case ADIOI_SYNC_FFLAGS: {
+	    r->fflags_ = va_arg(args, int);
 	    break;
-	case ADIOI_SYNC_ALL:
-	    {
-		r->type_ = va_arg(args, int);
-		r->off_ = va_arg(args, ADIO_Offset);
-		r->datatype_ = va_arg(args, MPI_Datatype);
-		r->count_ = va_arg(args, int);
-		r->req_ = va_arg(args, ADIO_Request *);
-		r->error_code_ = va_arg(args, int);
-		r->fflags_ = va_arg(args, int);
-	    }
+	}
+	case ADIOI_SYNC_ALL: {
+	    r->type_ = va_arg(args, int);
+	    r->off_ = va_arg(args, ADIO_Offset);
+	    r->datatype_ = va_arg(args, MPI_Datatype);
+	    r->count_ = va_arg(args, int);
+	    r->req_ = va_arg(args, ADIO_Request *);
+	    r->error_code_ = va_arg(args, int);
+	    r->fflags_ = va_arg(args, int);
 	    break;
+	}
 	default:
-		ret = ADIOI_SYNC_REQ_ERR;
+	    ret = ADIOI_SYNC_REQ_ERR;
     }
 
     va_end(args);

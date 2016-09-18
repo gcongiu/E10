@@ -107,7 +107,7 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
 
     ADIOI_Atomic_queue_t q = t->sub_;
     ADIOI_Sync_req_t r;
-    int retval, count, fflags, type, error_code;
+    int retval, count, fflags, error_code;
     ADIO_Offset offset, len;
     MPI_Aint lb, extent;
     MPI_Datatype datatype;
@@ -117,8 +117,7 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
     r = ADIOI_Atomic_queue_front(q);
     ADIOI_Atomic_queue_pop(q);
 
-    type = ADIOI_Sync_req_get_type(r);
-    ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_ALL, &offset,
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 	    &datatype, &count, &req, &error_code, &fflags);
 
     MPI_Type_get_extent(datatype, &lb, &extent );
@@ -163,15 +162,14 @@ int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status) {
     ADIOI_Sync_req_t r = (ADIOI_Sync_req_t)cb->req_;
     ADIO_File fd = (ADIO_File)cb->fd_;
     char *filename = fd->filename;
-    int type, count, cache_flush_flags, error_code;
+    int count, cache_flush_flags, error_code;
     MPI_Datatype datatype;
     ADIO_Offset offset;
     MPI_Aint lb, extent;
     ADIO_Offset len;
     ADIO_Request *req;
 
-    type = ADIOI_Sync_req_get_type(r);
-    ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_ALL, &offset,
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 	    &datatype, &count, &req, &error_code, &cache_flush_flags);
 
     int retval = deeper_cache_flush_wait(filename, cache_flush_flags);

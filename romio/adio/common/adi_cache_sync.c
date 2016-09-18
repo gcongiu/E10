@@ -104,14 +104,12 @@ void ADIOI_Sync_thread_flush(ADIOI_Sync_thread_t t) {
 
     ADIOI_Sync_req_t r, w;
     ADIO_Request *req;
-    int type;
 
     while (!ADIOI_Atomic_queue_empty(t->pen_)) {
 	r = ADIOI_Atomic_queue_front(t->pen_);
 	ADIOI_Atomic_queue_pop(t->pen_);
 
-	type = ADIOI_Sync_req_get_type(r);
-	ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_REQ, &req);
+	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_REQ, &req);
 
 	/* start Grequest */
 	MPI_Grequest_start(&ADIOI_Sync_req_query,
@@ -135,19 +133,16 @@ void ADIOI_Sync_thread_wait(ADIOI_Sync_thread_t t) {
     ADIOI_Sync_req_t wait, last;
     MPI_Status status;
     ADIO_Request *req;
-    int type;
 
     if (!ADIOI_Atomic_queue_empty(t->wait_)) {
 	last = (ADIOI_Sync_req_t)ADIOI_Atomic_queue_back(t->wait_);
-	type = ADIOI_Sync_req_get_type(last);
-	ADIOI_Sync_req_get_key(last, type, ADIOI_SYNC_REQ, &req);
+	ADIOI_Sync_req_get_key(last, ADIOI_SYNC_REQ, &req);
 	MPI_Wait(req, &status);
     }
 
     while (!ADIOI_Atomic_queue_empty(t->wait_)) {
 	wait = (ADIOI_Sync_req_t)ADIOI_Atomic_queue_front(t->wait_);
-	type = ADIOI_Sync_req_get_type(wait);
-	ADIOI_Sync_req_get_key(wait, type, ADIOI_SYNC_REQ, &req);
+	ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_REQ, &req);
 	ADIOI_Atomic_queue_pop(t->wait_);
 	ADIOI_Sync_req_fini(&wait);
 	ADIOI_Free(req);
@@ -252,17 +247,17 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 	ADIOI_Atomic_queue_pop(q);
 
 	/* get request type */
-	type = ADIOI_Sync_req_get_type(r);
+	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_TYPE, &type);
 
 	/* check for shutdown type */
 	if (type == ADIOI_THREAD_SHUTDOWN) {
-	    ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_REQ, &req);
+	    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_REQ, &req);
 	    MPI_Grequest_complete(*req);
 	    break;
 	}
 
 	/* if sync type get all the fields */
-	ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_ALL, &offset,
+	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 		&datatype, &count, &req, &error_code, &fflags);
 
 	/* init I/O req */
@@ -318,12 +313,13 @@ int ADIOI_Sync_req_query(void *extra_state, MPI_Status *status) {
     int error_code;
     MPI_Datatype datatype;
 
-    type = ADIOI_Sync_req_get_type(r);
-    ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_ERR_CODE, &error_code);
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ERR_CODE, &error_code);
+    
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_TYPE, &type);
 
     if (type == ADIOI_THREAD_SYNC) {
-	ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_DATATYPE, &datatype);
-	ADIOI_Sync_req_get_key(r, type, ADIOI_SYNC_COUNT, &count);
+	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_DATATYPE, &datatype);
+	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_COUNT, &count);
     }
 
     MPI_Status_set_cancelled(status, 0);
