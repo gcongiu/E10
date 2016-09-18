@@ -96,9 +96,15 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	            myrank, fd->cache_fd->filename, nodename);
 
 	/* init synchronisation thread pool */
-	if (*error_code == MPI_SUCCESS &&
-		fd->hints->e10_cache_flush_flag != ADIOI_HINT_FLUSHNONE) {
-	    *error_code = ADIOI_Sync_thread_pool_init(fd, NULL);
+	if (*error_code == MPI_SUCCESS && fd->hints->e10_cache_flush_flag != ADIOI_HINT_FLUSHNONE) {
+	    if (fd->hints->cb_write == ADIOI_HINT_ENABLE)
+		if (fd->is_agg)
+		    *error_code = ADIOI_Sync_thread_pool_init(fd, NULL);
+		else
+		    *error_code = MPI_SUCCESS;
+	    else
+		*error_code = ADIOI_Sync_thread_pool_init(fd, NULL);
+
 	    if (*error_code != MPI_SUCCESS)
 		FPRINTF(stderr, " -> proc %d error while creating sync thread pool in node %s\n",
 			myrank, nodename);
@@ -116,7 +122,7 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 		    ADIO_Delete(fd->cache_fd->filename, error_code);
 		}
                 /* fini synchronisation thread pool */
-		if (fd->hints->e10_cache_flush_flag != ADIOI_HINT_FLUSHNONE) {
+		if (fd->hints->e10_cache_flush_flag != ADIOI_HINT_FLUSHNONE && fd->thread_pool) {
 		    ADIOI_Sync_thread_pool_fini(fd);
 		}
 	    }
