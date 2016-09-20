@@ -20,7 +20,7 @@ void ADIOI_GEN_Flush(ADIO_File fd, int *error_code)
 
     *error_code = MPI_SUCCESS;
 
-    if (fd->cache_fd == NULL ||
+    if (fd->cache_fd == NULL || fd->thread_pool == NULL ||
 	(fd->cache_fd && !fd->cache_fd->is_open) ||
 	(fd->cache_fd && fd->cache_fd->is_open &&
 	 fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHNONE))
