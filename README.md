@@ -107,12 +107,12 @@ APIs to flush the cache and wait for completion.
 
 ##`ADIOI_Sync_thread_t` APIs (`adio/common/adi_cache_sync.c`)
 
-* `ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...)`: initialise a new sync thread. The new thread contains three queue.
+* `ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...)`: initialise a new sync thread. The new thread contains three queues.
   A pending queue (`pen_`) which receives `ADIOI_Sync_req_t`(s) from the main thread and buffers them, a submitted queue (`sub_`)
   that contains requests that have been flushed and are thus ready to be satisfied and a wait queue (`wait_`) that contains
   a copy of the pointer of the `ADIOI_Sync_req_t`(s) that have been inserted in the sub_ queue. This queue is used to check 
-  the completion of requests when `MPI_Wait()` is invoked.
-  The init routine also starts a posix thread passing it a pointer to the `ADIOI_Sync_thread_start()` routine. This will 
+  upon the completion of requests when `MPI_Wait()` is invoked.
+  The init routine also starts a posix thread passing to it a pointer to the `ADIOI_Sync_thread_start()` routine. This will 
   continuously check for new sync requests in the `sub_` queue.
 
 * `ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t)`: finilise a synchronisation thread. The finalisation process consists in
@@ -137,8 +137,6 @@ APIs to flush the cache and wait for completion.
 * `ADIOI_Sync_req_set(ADIOI_Sync_req_t r, ...)`: set a property of the sync request.
 
 * `ADIOI_Sync_req_get(ADIOI_Sync_req_t r, ...)`: get a property of the sync request.
-
-* `ADIOI_Sync_req_get_type(ADIOI_Sync_req_t r)`: get the type of request.
 
 
 #MPIWRAP (`mpiwrap/mpiwrap.cpp`)
