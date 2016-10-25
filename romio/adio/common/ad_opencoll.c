@@ -128,6 +128,7 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	    }
 
 	    /* Revert to standard file access: no cache */
+	    FPRINTF(stderr, "[Cache Initialisation Error]: reverting to standard implementation.\n");
 	    ADIOI_Info_set(fd->info, "e10_cache", "disable");
 	    fd->hints->e10_cache = ADIOI_HINT_DISABLE;
 	}
