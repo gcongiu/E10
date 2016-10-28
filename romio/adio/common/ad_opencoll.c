@@ -32,6 +32,11 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 
     orig_amode_excl = access_mode;
 
+    /* Revert to absolute pathnames */
+    pathname = ADIOI_Abspath(fd->filename);
+    ADIOI_Free(fd->filename);
+    fd->filename = pathname;
+
     MPI_Comm_rank(fd->comm, &myrank);
 
     /* check cache mode */
