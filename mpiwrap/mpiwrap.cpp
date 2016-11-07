@@ -446,8 +446,6 @@ int MPI_File_open( MPI_Comm comm, const char *filename, int amode, MPI_Info info
 	int ret, myrank;
 	MPI_Info myinfo;
 	MPI_File *local_fh;
-	char *absfilename = realpath(filename, NULL);
-
 	PMPI_Comm_rank( comm, &myrank );
 
 	/* make sure fh is not null */
@@ -464,7 +462,7 @@ int MPI_File_open( MPI_Comm comm, const char *filename, int amode, MPI_Info info
 	}
 
 	/* get the filename's base name */
-	char * pathname = strdup( absfilename );
+	char * pathname = strdup( filename );
 	char * basenam  = basename( pathname );
 
 	std::list<std::string>::iterator git = guardnames_->begin( );
@@ -502,14 +500,14 @@ int MPI_File_open( MPI_Comm comm, const char *filename, int amode, MPI_Info info
 	}
 
 	/* set hints for filename */
-	setFileHints( absfilename, &myinfo );
+	setFileHints( filename, &myinfo );
 
 	/* rank 0 prints hints */
 	if( myrank == 0 )
 	{
 		int flag, i, numkeys = ( unsigned int )sizeof( key_ ) / sizeof( std::string );
 		char *value = ( char* )malloc( MPI_MAX_INFO_VAL + 1);
-		std::cout << "Filename " << absfilename << " {" << std::endl;
+		std::cout << "Filename " << filename << " {" << std::endl;
 		for( i = 0; i < numkeys; i++ )
 		{
 			PMPI_Info_get( myinfo, key_[i].c_str( ), MPI_MAX_INFO_VAL, value, &flag );
@@ -524,7 +522,7 @@ int MPI_File_open( MPI_Comm comm, const char *filename, int amode, MPI_Info info
 	stim = PMPI_Wtime( );
 
 	/* open filename */
-	if( (ret = _MPI_File_open( comm, absfilename, amode, myinfo, fh )) != MPI_SUCCESS )
+	if( (ret = _MPI_File_open( comm, filename, amode, myinfo, fh )) != MPI_SUCCESS )
 		goto fn_exit;
 
 	/* stop timer */
