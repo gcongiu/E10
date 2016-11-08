@@ -1,10 +1,8 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
-/*
+/* 
  *
- *   Copyright (C) 1997 University of Chicago.
+ *   Copyright (C) 1997 University of Chicago. 
  *   See COPYRIGHT notice in top-level directory.
- *
- *   Copyright (C) 2014-2016 Seagate Systems UK Ltd.
  */
 
 #include "adio.h"
@@ -13,7 +11,7 @@
 
 void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 {
-/* if fd->info is null, create a new info object.
+/* if fd->info is null, create a new info object. 
    Initialize fd->info to default values.
    Initialize fd->hints to default values.
    Examine the info object passed by the user. If it contains values that
@@ -60,15 +58,15 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
     if (!fd->hints->initialized) {
 
 	/* buffer size for collective I/O */
-	ADIOI_Info_set(info, "cb_buffer_size", ADIOI_CB_BUFFER_SIZE_DFLT);
+	ADIOI_Info_set(info, "cb_buffer_size", ADIOI_CB_BUFFER_SIZE_DFLT); 
 	fd->hints->cb_buffer_size = atoi(ADIOI_CB_BUFFER_SIZE_DFLT);
 
 	/* default is to let romio automatically decide when to use
 	 * collective buffering
 	 */
-	ADIOI_Info_set(info, "romio_cb_read", "automatic");
+	ADIOI_Info_set(info, "romio_cb_read", "automatic"); 
 	fd->hints->cb_read = ADIOI_HINT_AUTO;
-	ADIOI_Info_set(info, "romio_cb_write", "automatic");
+	ADIOI_Info_set(info, "romio_cb_write", "automatic"); 
 	fd->hints->cb_write = ADIOI_HINT_AUTO;
 
 	fd->hints->cb_config_list = NULL;
@@ -85,7 +83,7 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	/* hint instructing the use of persistent file realms */
 	ADIOI_Info_set(info, "romio_cb_pfr", "disable");
 	fd->hints->cb_pfr = ADIOI_HINT_DISABLE;
-
+	
 	/* hint guiding the assignment of persistent file realms */
 	ADIOI_Info_set(info, "romio_cb_fr_types", "aar");
 	fd->hints->cb_fr_type = ADIOI_FR_AAR;
@@ -117,32 +115,15 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	/* default is to let romio automatically decide when to use data
 	 * sieving
 	 */
-	ADIOI_Info_set(info, "romio_ds_read", "automatic");
+	ADIOI_Info_set(info, "romio_ds_read", "automatic"); 
 	fd->hints->ds_read = ADIOI_HINT_AUTO;
-	ADIOI_Info_set(info, "romio_ds_write", "automatic");
+	ADIOI_Info_set(info, "romio_ds_write", "automatic"); 
 	fd->hints->ds_write = ADIOI_HINT_AUTO;
-
-	/* set e10_cache mode to default */
-	ADIOI_Info_set( fd->info, "e10_cache", "disable" );
-	ADIOI_Info_set( fd->info, "e10_cache_flush_flag", "flush_immediate" );
-	ADIOI_Info_set( fd->info, "e10_cache_discard_flag", "enable" );
-	ADIOI_Info_set( fd->info, "e10_cache_path", "" );
-	ADIOI_Info_set( fd->info, "e10_cache_threads", "1" );
-	fd->hints->e10_cache = ADIOI_HINT_DISABLE;
-	fd->hints->e10_cache_coherent = ADIOI_HINT_DISABLE;
-	fd->hints->e10_cache_discard_flag = ADIOI_HINT_ENABLE;
-	fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHIMMEDIATE;
-	fd->hints->e10_cache_path = NULL;
-	fd->hints->e10_cache_threads = 1;
-
-	/* set collective mode to default -> EXT2PH */
-	ADIOI_Info_set( fd->info, "e10_collective_mode", "ext2ph" );
-	fd->hints->e10_collective_mode = ADIOI_HINT_EXT2PH;
 
 	/* still to do: tune this a bit for a variety of file systems. there's
 	 * no good default value so just leave it unset */
 	fd->hints->min_fdomain_size = 0;
-	fd->hints->striping_unit = 0;
+  fd->hints->striping_unit = 0;
 
 	fd->hints->initialized = 1;
 
@@ -156,18 +137,18 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 
     /* add in user's info if supplied */
     if (users_info != MPI_INFO_NULL) {
-	ADIOI_Info_check_and_install_int(fd, users_info, "cb_buffer_size",
+	ADIOI_Info_check_and_install_int(fd, users_info, "cb_buffer_size", 
 		&(fd->hints->cb_buffer_size), myname, error_code);
 
 	/* aligning file realms to certain sizes (e.g. stripe sizes)
 	 * may benefit I/O performance */
-	ADIOI_Info_check_and_install_int(fd, users_info, "romio_cb_fr_alignment",
+	ADIOI_Info_check_and_install_int(fd, users_info, "romio_cb_fr_alignment", 
 		&(fd->hints->cb_fr_alignment), myname, error_code);
 
 	/* for collective I/O, try to be smarter about when to do data sieving
 	 * using a specific threshold for the datatype size/extent
 	 * (percentage 0-100%) */
-	ADIOI_Info_check_and_install_int(fd, users_info, "romio_cb_ds_threshold",
+	ADIOI_Info_check_and_install_int(fd, users_info, "romio_cb_ds_threshold", 
 		&(fd->hints->cb_ds_threshold), myname, error_code);
 
 	ADIOI_Info_check_and_install_enabled(fd, users_info, "romio_cb_alltoall",
@@ -197,7 +178,7 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	ADIOI_Info_check_and_install_enabled(fd, users_info, "romio_cb_pfr",
 		&(fd->hints->cb_pfr), myname, error_code);
 
-
+	
 	/* file realm assignment types ADIOI_FR_AAR(0),
 	 ADIOI_FR_FSZ(-1), ADIOI_FR_USR_REALMS(-2), all others specify
 	 a regular fr size in bytes. probably not the best way... */
@@ -215,7 +196,7 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	    ADIOI_Info_set(info, "romio_cb_read", "enable");
 	    fd->hints->cb_read = 1;
 	    fd->hints->cb_write = 1;
-	}
+	} 
 	/* new hints for enabling/disabling data sieving on
 	 * reads/writes
 	 */
@@ -263,84 +244,8 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 
 	/* Now we use striping unit in common code so we should
 	   process hints for it. */
-	ADIOI_Info_check_and_install_int(fd, users_info, "striping_unit",
+	ADIOI_Info_check_and_install_int(fd, users_info, "striping_unit", 
 		&(fd->hints->striping_unit), myname, error_code);
-
-	/* Cache mode hints: enable/disable cache and set flush flags */
-	ADIOI_Info_get( users_info, "e10_cache", MPI_MAX_INFO_VAL, value, &flag );
-	if( flag ) {
-	    if( !strcmp( value, "enable") || !strcmp( value, "ENABLE" ) ) {
-		ADIOI_Info_set( fd->info, "e10_cache", "enable" );
-		fd->hints->e10_cache = ADIOI_HINT_ENABLE;
-		fd->hints->e10_cache_coherent = ADIOI_HINT_DISABLE;
-	    }
-	    else if( !strcmp( value, "coherent" ) || !strcmp( value, "COHERENT" ) ) {
-		ADIOI_Info_set( fd->info, "e10_cache", "enable" );
-		fd->hints->e10_cache = ADIOI_HINT_ENABLE;
-		fd->hints->e10_cache_coherent = ADIOI_HINT_ENABLE;
-	    }
-	    else {
-		ADIOI_Info_set( fd->info, "e10_cache", "disable" );
-		fd->hints->e10_cache = ADIOI_HINT_DISABLE;
-	    }
-	}
-	if( fd->hints->e10_cache == ADIOI_HINT_ENABLE ) {
-	    ADIOI_Info_get( users_info, "e10_cache_flush_flag", MPI_MAX_INFO_VAL, value, &flag );
-	    if( flag ) {
-		if( !strcmp( value, "flush_immediate" ) || !strcmp( value, "FLUSH_IMMEDIATE" ) ) {
-		    ADIOI_Info_set( fd->info, "e10_cache_flush_flag", "flush_immediate" );
-		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHIMMEDIATE;
-		}
-		else if( !strcmp( value, "flush_onclose" ) || !strcmp( value, "FLUSH_ONCLOSE" ) ) {
-		    ADIOI_Info_set( fd->info, "e10_cache_flush_flag", "flush_onclose" );
-		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHONCLOSE;
-		}
-		else if( !strcmp( value, "flush_none" ) || !strcmp( value, "FLUSH_NONE" ) ) {
-		    ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_none");
-		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHNONE;
-		}
-	    }
-	    ADIOI_Info_get( users_info, "e10_cache_discard_flag", MPI_MAX_INFO_VAL, value, &flag );
-	    if( flag ) {
-		if( !strcmp( value, "enable" ) || !strcmp( value, "ENABLE" ) ) {
-		    ADIOI_Info_set( fd->info, "e10_cache_discard_flag", "enable" );
-		    fd->hints->e10_cache_discard_flag = ADIOI_HINT_ENABLE;
-		}
-		else if( !strcmp( value, "disable" ) || !strcmp( value, "DISABLE" ) ) {
-		    ADIOI_Info_set(fd->info, "e10_cache_discard_flag", "disable");
-		    fd->hints->e10_cache_discard_flag = ADIOI_HINT_DISABLE;
-		}
-	    }
-	    ADIOI_Info_get( fd->info, "e10_cache_threads", MPI_MAX_INFO_VAL, value, &flag );
-	    if( flag ) {
-		ADIOI_Info_set( fd->info, "e10_cache_threads", value );
-		fd->hints->e10_cache_threads = atoi(value);
-	    }
-            ADIOI_Info_get( users_info, "e10_cache_path", MPI_MAX_INFO_VAL, value, &flag );
-            if( flag ) {
-                ADIOI_Info_set( fd->info, "e10_cache_path", value );
-                fd->hints->e10_cache_path = ADIOI_Strdup( value );
-            }
-	}
-
-        /* Collective mode hints: classic ext2ph or parcoll */
-	ADIOI_Info_get( users_info, "e10_collective_mode", MPI_MAX_INFO_VAL, value, &flag );
-	if( flag ) {
-	    if( !strcmp( value, "ext2ph" ) || !strcmp( value, "EXT2PH" ) ) {
-		ADIOI_Info_set( fd->info, "e10_collective_mode", "ext2ph" );
-		fd->hints->e10_collective_mode = ADIOI_HINT_EXT2PH;
-	    }
-	    else if( !strcmp( value, "parcoll" ) || !strcmp( value, "PARCOLL" ) ) {
-		/* use partitioned collective I/O */
-		ADIOI_Info_set( fd->info, "e10_collective_mode", "parcoll" );
-		fd->hints->e10_collective_mode = ADIOI_HINT_PARCOLL;
-
-		/* parcoll does not support deferred_opens, reset to zero */
-		ADIOI_Info_set( fd->info, "romio_no_indep_rw", "false" );
-		fd->hints->no_indep_rw = ADIOI_HINT_DISABLE;
-		fd->hints->deferred_open = 0;
-	    }
-	}
     }
 
     /* Begin hint post-processig: some hints take precidence over or conflict
@@ -402,7 +307,3 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 
     *error_code = MPI_SUCCESS;
 }
-
-/*
- * vim: ts=8 sts=4 sw=4 noexpandtab
- */

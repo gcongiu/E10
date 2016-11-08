@@ -16,6 +16,9 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_set_view as PMPI_File_set_view
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype,
+                      const char *datarep, MPI_Info info) __attribute__((weak,alias("PMPI_File_set_view")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -123,12 +126,12 @@ int MPI_File_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype,
 	goto fn_exit;
     }
 
-    if (strcmp(datarep, "native") && 
+    if ((datarep == NULL) || (strcmp(datarep, "native") &&
 	    strcmp(datarep, "NATIVE") &&
 	    strcmp(datarep, "external32") &&
 	    strcmp(datarep, "EXTERNAL32") &&
 	    strcmp(datarep, "internal") &&
-	    strcmp(datarep, "INTERNAL"))
+	    strcmp(datarep, "INTERNAL")) )
     {
 	error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
 					  myname, __LINE__,

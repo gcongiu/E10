@@ -55,6 +55,10 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
 
     ADIOI_UNREFERENCED_ARG(argc);
     ADIOI_UNREFERENCED_ARG(argv);
+    
+#ifdef ROMIO_INSIDE_MPICH
+    MPIR_Ext_init();
+#endif
 
 /* initialize the linked list containing flattened datatypes */
     ADIOI_Flatlist = (ADIOI_Flatlist_node *) ADIOI_Malloc(sizeof(ADIOI_Flatlist_node));
@@ -74,11 +78,6 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
     else ADIOI_Direct_write = 0;
 #endif
 
-    /* Assume system-wide hints won't change between runs: move hint processing
-     * from ADIO_Open to here */
-    /* FIXME should be checking error code from MPI_Info_create here */
-    MPI_Info_create(&ADIOI_syshints);
-    ADIOI_process_system_hints(ADIOI_syshints);
 
 #ifdef ADIOI_MPE_LOGGING
     {
@@ -99,21 +98,6 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
 	MPE_Log_get_state_eventIDs( &ADIOI_MPE_stat_a, &ADIOI_MPE_stat_b);
 	MPE_Log_get_state_eventIDs( &ADIOI_MPE_iread_a, &ADIOI_MPE_iread_b);
 	MPE_Log_get_state_eventIDs( &ADIOI_MPE_iwrite_a, &ADIOI_MPE_iwrite_b);
-	/* ROMIO profiling ... */
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_exchange_a, &ADIOI_MPE_exchange_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_waitall_a, &ADIOI_MPE_waitall_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_isend_a, &ADIOI_MPE_isend_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_irecv_a, &ADIOI_MPE_irecv_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_recv_a, &ADIOI_MPE_recv_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_startup_a, &ADIOI_MPE_startup_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_alltoall_a, &ADIOI_MPE_alltoall_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_sync_a, &ADIOI_MPE_sync_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_read_a, &ADIOI_MPE_thread_read_b );
-        MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_write_a, &ADIOI_MPE_thread_write_b );
-	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_flush_a, &ADIOI_MPE_thread_flush_b );
-	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_wait_a, &ADIOI_MPE_thread_wait_b );
-	MPE_Log_get_state_eventIDs( &ADIOI_MPE_thread_fsync_a, &ADIOI_MPE_thread_fsync_b );
-	MPE_Log_get_state_eventIDs( &ADIOI_MPE_fsync_a, &ADIOI_MPE_fsync_b );
 
         int  comm_world_rank;
         MPI_Comm_rank( MPI_COMM_WORLD, &comm_world_rank );
@@ -141,36 +125,6 @@ void ADIO_Init(int *argc, char ***argv, int *error_code)
 	    MPE_Describe_state( ADIOI_MPE_stat_a, ADIOI_MPE_stat_b, "stat", "purple");
 	    MPE_Describe_state( ADIOI_MPE_iread_a, ADIOI_MPE_iread_b, "iread", "purple");
 	    MPE_Describe_state( ADIOI_MPE_iwrite_a, ADIOI_MPE_iwrite_b, "iwrite", "purple");
-	    /* ROMIO profiling ... */
-            MPE_Describe_state( ADIOI_MPE_exchange_a, ADIOI_MPE_exchange_b, 
-                                "ADIOI_ext2ph_shuffle", "green" );
-            MPE_Describe_state( ADIOI_MPE_waitall_a, ADIOI_MPE_waitall_b, 
-                                "ADIOI_ext2ph_waitall", "red" );
-            MPE_Describe_state( ADIOI_MPE_irecv_a, ADIOI_MPE_irecv_b, 
-                                "ADIOI_ext2ph_irecv", "purple" );
-            MPE_Describe_state( ADIOI_MPE_recv_a, ADIOI_MPE_recv_b, 
-                                "ADIOI_ext2ph_recv", "yellow" );
-            MPE_Describe_state( ADIOI_MPE_isend_a, ADIOI_MPE_isend_b, 
-                                "ADIOI_ext2ph_isend", "blue" );
-            MPE_Describe_state( ADIOI_MPE_startup_a, ADIOI_MPE_startup_b, 
-                                "ADIOI_ext2ph_startup", "purple" );
-            MPE_Describe_state( ADIOI_MPE_alltoall_a, ADIOI_MPE_alltoall_b, 
-                                "ADIOI_ext2ph_all2all", "white" );
-            MPE_Describe_state( ADIOI_MPE_sync_a, ADIOI_MPE_sync_b, 
-                                "ADIOI_e10_sync", "purple" );
-            MPE_Describe_state( ADIOI_MPE_thread_read_a, ADIOI_MPE_thread_read_b, 
-                                "ADIOI_e10_thread_read", "magenta" );
-            MPE_Describe_state( ADIOI_MPE_thread_write_a, ADIOI_MPE_thread_write_b, 
-                                "ADIOI_e10_thread_write", "plum" );
-	    MPE_Describe_state( ADIOI_MPE_thread_flush_a, ADIOI_MPE_thread_flush_b,
-			    	"ADIOI_e10_thread_flush", "red" );
-	    MPE_Describe_state( ADIOI_MPE_thread_wait_a, ADIOI_MPE_thread_wait_b,
-			    	"ADIOI_e10_thread_wait", "yellow" );
-	    MPE_Describe_state( ADIOI_MPE_thread_fsync_a, ADIOI_MPE_thread_fsync_b,
-			    	"ADIOI_e10_thread_fsync", "purple" );
-	    MPE_Describe_state( ADIOI_MPE_fsync_a, ADIOI_MPE_fsync_b,
-			    	"ADIOI_fsync", "blue" );
-
         }
     }
 #endif

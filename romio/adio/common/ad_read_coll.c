@@ -105,9 +105,7 @@ void ADIOI_GEN_ReadStridedColl(ADIO_File fd, void *buf, int count,
 
     /* Note: end_offset points to the last byte-offset that will be accessed.
        e.g., if start_offset=0 and 100 bytes to be read, end_offset=99*/
-#ifdef ADIOI_MPE_LOGGING
-	MPE_Log_event (ADIOI_MPE_startup_a, 0, NULL);
-#endif
+
 	ADIOI_Calc_my_off_len(fd, count, datatype, file_ptr_type, offset,
 			      &offset_list, &len_list, &start_offset,
 			      &end_offset, &contig_access_count); 
@@ -223,9 +221,6 @@ void ADIOI_GEN_ReadStridedColl(ADIO_File fd, void *buf, int count,
 			  nprocs, myrank, &count_others_req_procs, 
 			  &others_req); 
 
-#ifdef ADIOI_MPE_LOGGING
-    MPE_Log_event (ADIOI_MPE_startup_b, 0, NULL);
-#endif
     /* my_req[] and count_my_req_per_proc aren't needed at this point, so 
      * let's free the memory 
      */
@@ -366,7 +361,7 @@ void ADIOI_Calc_my_off_len(ADIO_File fd, int bufcount, MPI_Datatype
             int ii;
             DBG_FPRINTF(stderr, "flattened %3lld : ", flat_file->count );
             for (ii=0; ii<flat_file->count; ii++) {
-                DBG_FPRINTF(stderr, "%16qd:%-16qd", flat_file->indices[ii], flat_file->blocklens[ii] );
+                DBG_FPRINTF(stderr, "%16lld:%-16lld", flat_file->indices[ii], flat_file->blocklens[ii] );
             }
             DBG_FPRINTF(stderr, "\n" );
         }
@@ -575,7 +570,7 @@ static void ADIOI_Read_and_exch(ADIO_File fd, void *buf, MPI_Datatype
 
     MPI_Allreduce(&ntimes, &max_ntimes, 1, MPI_INT, MPI_MAX, fd->comm); 
 
-    if (ntimes) read_buf = (char *) ADIOI_Malloc(coll_bufsize);
+    read_buf = fd->io_buf;  /* Allocated at open time */
 
     curr_offlen_ptr = (int *) ADIOI_Calloc(nprocs, sizeof(int)); 
     /* its use is explained below. calloc initializes to 0. */
@@ -745,9 +740,10 @@ static void ADIOI_Read_and_exch(ADIO_File fd, void *buf, MPI_Datatype
       ADIOI_Assert((((ADIO_Offset)(MPIR_Upint)read_buf)+real_size-for_next_iter) == (ADIO_Offset)(MPIR_Upint)(read_buf+real_size-for_next_iter));
       ADIOI_Assert((for_next_iter+coll_bufsize) == (size_t)(for_next_iter+coll_bufsize));
 	    memcpy(tmp_buf, read_buf+real_size-for_next_iter, for_next_iter);
-	    ADIOI_Free(read_buf);
-	    read_buf = (char *) ADIOI_Malloc(for_next_iter+coll_bufsize);
-	    memcpy(read_buf, tmp_buf, for_next_iter);
+	    ADIOI_Free(fd->io_buf);
+	    fd->io_buf = (char *) ADIOI_Malloc(for_next_iter+coll_bufsize);
+	    memcpy(fd->io_buf, tmp_buf, for_next_iter);
+	    read_buf = fd->io_buf;
 	    ADIOI_Free(tmp_buf);
 	}
 
@@ -767,7 +763,6 @@ static void ADIOI_Read_and_exch(ADIO_File fd, void *buf, MPI_Datatype
 			    others_req, m,
                             buftype_extent, buf_idx); 
 
-    if (ntimes) ADIOI_Free(read_buf);
     ADIOI_Free(curr_offlen_ptr);
     ADIOI_Free(count);
     ADIOI_Free(partial_send);
@@ -797,9 +792,6 @@ static void ADIOI_R_Exchange_data(ADIO_File fd, void *buf, ADIOI_Flatlist_node
 
 /* exchange send_size info so that each process knows how much to
    receive from whom and how much memory to allocate. */
-#ifdef ADIOI_MPE_LOGGING
-    MPE_Log_event (ADIOI_MPE_exchange_a, 0, NULL);
-#endif	
 
     MPI_Alltoall(send_size, 1, MPI_INT, recv_size, 1, MPI_INT, fd->comm);
 
@@ -861,8 +853,8 @@ static void ADIOI_R_Exchange_data(ADIO_File fd, void *buf, ADIOI_Flatlist_node
 		tmp = others_req[i].lens[k];
 		others_req[i].lens[k] = partial_send[i];
 	    }
-	    MPI_Type_hindexed(count[i], 
-                 &(others_req[i].lens[start_pos[i]]),
+	    ADIOI_Type_create_hindexed_x(count[i],
+		  &(others_req[i].lens[start_pos[i]]),
 	            &(others_req[i].mem_ptrs[start_pos[i]]), 
 			 MPI_BYTE, &send_type);
 	    /* absolute displacement; use MPI_BOTTOM in send */
@@ -900,10 +892,6 @@ static void ADIOI_R_Exchange_data(ADIO_File fd, void *buf, ADIOI_Flatlist_node
 
     /* wait on the sends*/
     MPI_Waitall(nprocs_send, requests+nprocs_recv, statuses+nprocs_recv);
-
-#ifdef ADIOI_MPE_LOGGING
-    MPE_Log_event (ADIOI_MPE_exchange_b, 0, NULL);
-#endif	
 
     ADIOI_Free(statuses);
     ADIOI_Free(requests);

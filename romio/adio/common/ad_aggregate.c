@@ -2,8 +2,6 @@
 /* 
  *   Copyright (C) 1997-2001 University of Chicago. 
  *   See COPYRIGHT notice in top-level directory.
- *
- *   Copyright (C) 2015-2016 Seagate Systems UK Ltd.
  */
 
 #include "adio.h"
@@ -17,7 +15,6 @@
 
 /* This file contains four functions:
  *
- * ADIOI_Calc_sync_groups()
  * ADIOI_Calc_aggregator()
  * ADIOI_Calc_file_domains()
  * ADIOI_Calc_my_req()
@@ -45,181 +42,6 @@
  *    start + size - 1 roughly, but it can be less, or 0, in the case of 
  *    uneven distributions
  */
-
-/* ADIOI_Calc_sync_groups()
- *
- * Author: Giuseppe Congiu
- *
- * Description: Compute synchronisation groups for partitioned collective I/O.
- */
-void ADIOI_Calc_sync_groups(ADIO_File fd, ADIO_Offset *st_offsets, ADIO_Offset
-                            *end_offsets, int nprocs, int interleave_count)
-{
-    int i, j, k, l, m;    /* general indices */
-    int myrank, old_rank,
-        fa_count,         /* file area count */ 
-        nprocs_for_coll,  /* # of aggregators (or file domains) */
-        **fa_rank_list,   /* list of ranks per file area */
-        *fa_rank_list_sz, /* # of ranks per file area */
-        *fa_id_for_proc,  /* file area for a process */
-        *fd_id_for_proc,  /* file domain for a process */
-        *grp_id_for_proc, /* file area/domain for a process */
-        nfas_per_fd;      /* # of file areas per file domain */
-    char *value,
-         comm_name[16];   /* communicator name */
-    MPI_Comm e10_sync_comm;
-
-    MPI_Comm_rank(fd->comm, &myrank);
-    nprocs_for_coll = fd->hints->cb_nodes;
-    old_rank = myrank;
-
-    /* # of file areas for this collective operation */
-    fa_count = nprocs - interleave_count;
-
-    /* allocate space for file areas and file domains ids */
-    fa_id_for_proc = (int*)ADIOI_Malloc(nprocs * sizeof(int));
-    fd_id_for_proc = (int*)ADIOI_Malloc(nprocs * sizeof(int)); 
-
-    /* allocate space to track ranks for file area */
-    fa_rank_list = (int**)ADIOI_Malloc(fa_count * sizeof(int*));
-    fa_rank_list_sz = (int*)ADIOI_Malloc(fa_count * sizeof(int));
-
-#ifdef SYNC_GROUP_DEBUG
-    if (myrank == 0)
-        FPRINTF(stderr, "[%s:%d] fa_count = %d\n", __FILE__, myrank, fa_count);
-    fflush(stderr);
-#endif
-
-/* compute file areas and ranks in each file area */
-    fa_id_for_proc[0] = 0;              /* assign proc 0 to file area 0 */
-    j = 0, k = 1;                       /* init # of ranks k for file area 0 */
-    for (i = 1; i < nprocs; i++) {
-        if ((st_offsets[i] < end_offsets[i-1]) &&
-            (st_offsets[i] <= end_offsets[i])) {
-            fa_id_for_proc[i] = j;      /* proc i belongs to fa j */
-            k++;                        /* # of ranks for this fa */
-        } 
-        else {
-            fa_rank_list[j] = (int*)ADIOI_Malloc(k * sizeof(int));
-            fa_rank_list_sz[j] = k;
-            for (l = i - k, m = 0; l < i; l++, m++) {
-                fa_rank_list[j][m] = l; /* add k ranks to fa j */
-            }
-            j++;                        /* move to next fa */
-            fa_id_for_proc[i] = j;      /* proc i belongs to fa j */
-            k = 1;                      /* reset # of ranks for this fa */
-        }
-    }
-    /* process the last file area */
-    fa_rank_list[j] = (int*)ADIOI_Malloc(k * sizeof(int));
-    fa_rank_list_sz[j] = k;
-    for (l = i - k, m = 0; l < i; l++, m++) {
-        fa_rank_list[j][m] = l;         /* add k ranks to fa j */
-    }
-
-#ifdef SYNC_GROUP_DEBUG
-    /* for each file area print out ranks */
-    for (i = 0; i < fa_count && myrank == 0; i++) {
-        FPRINTF(stderr, "[%s:%d] fa_rank_list[%d] = \n", __FILE__, myrank, i);
-        k = fa_rank_list_sz[i];
-        for (j = 0; j < k; j++) {
-            FPRINTF(stderr, "[%s:%d]\t\t%d\n", __FILE__, myrank, fa_rank_list[i][j]);
-        }
-        fflush(stderr);
-    }
-#endif
-
-/* adjust the number of aggregators */
-    if (nprocs_for_coll <= fa_count) {
-        /* communication groups will include multiple file areas */
-        nprocs_for_coll += (fa_count % nprocs_for_coll) / (fa_count / nprocs_for_coll);
-    }
-    else { /* if( nprocs_for_coll > fa_count ) */
-        /* communication groups will include multiple file domains */
-        nprocs_for_coll += (fa_count * ((nprocs_for_coll + fa_count - 1) / fa_count)) - nprocs_for_coll; 
-    }
-
-#ifdef SYNC_GROUP_DEBUG
-    if (myrank == 0)
-        FPRINTF(stderr, "[%s:%d] nprocs_for_coll = %d\n", 
-                __FILE__, myrank, nprocs_for_coll);
-    fflush(stderr);
-#endif
-
-/* compute rank lists for every sync group */
-    if (nprocs_for_coll >= fa_count) {
-        /* comm groups correspond to file areas */
-        grp_id_for_proc = fa_id_for_proc; 
-    }
-    else { /* if( nprocs_for_coll < fa_count ) */
-        /* # of communication groups = # of file domains */
-        nfas_per_fd = fa_count / nprocs_for_coll;
-
-        /* group procs from multiple file areas into one file domain */
-        for (i = 0; i < nprocs_for_coll; i++) {
-            m = i * nfas_per_fd;
-            for (j = m; j < m + nfas_per_fd; j++) {
-                for (l = 0; l < fa_rank_list_sz[j]; l++) {
-                    fd_id_for_proc[fa_rank_list[j][l]] = i;
-                }
-            }
-        }
-
-        /* comm groups correspond to file domains */
-        grp_id_for_proc = fd_id_for_proc; 
-    }
-
-/* create new sync comm for every group */
-    /* colour is the id number of the fd or fa */
-    j = grp_id_for_proc[myrank];
-    MPI_Comm_split(fd->comm, j + 2, 0, &e10_sync_comm);
-    sprintf(comm_name, "%d", j);
-    MPI_Comm_set_name(e10_sync_comm, comm_name);
- 
-/* redistribute aggregators to every group */
-    fd->my_cb_nodes_index = -2;
-    fd->is_agg = 0;
-
-    nprocs_for_coll = (nprocs_for_coll >= fa_count) ? 
-            nprocs_for_coll / fa_count : 1;
-
-    fd->hints->ranklist = (int*)ADIOI_Malloc(nprocs_for_coll * sizeof(int));
-
-    MPI_Comm_size(e10_sync_comm, &nprocs);
-    MPI_Comm_rank(e10_sync_comm, &myrank);
-
-    for (i = 0; i < nprocs_for_coll; i++) {
-        fd->hints->ranklist[i] = i * nprocs / nprocs_for_coll;
-        if (myrank == fd->hints->ranklist[i]) {
-            fd->is_agg = 1;
-            fd->my_cb_nodes_index = i;
-        }
-    }
-
-#ifdef SYNC_GROUP_DEBUG
-    if (fd->is_agg) {
-        FPRINTF(stderr, "[%s:%d] my_cb_nodes_index = %d\n",
-                __FILE__, old_rank, fd->my_cb_nodes_index);
-        FPRINTF(stderr, "[%s:%d] fd->hints->ranklist[%d] = %d\n",
-                __FILE__, old_rank, fd->my_cb_nodes_index, 
-                fd->hints->ranklist[fd->my_cb_nodes_index]);
-    }
-#endif
-
-    /* set the number of aggregators for this group */
-    fd->hints->cb_nodes = nprocs_for_coll;
-
-    /* set comm to e10_sync_comm */
-    fd->comm = e10_sync_comm;
-
-    /* free buffers */
-    for (i = 0; i < fa_count; i++)
-        ADIOI_Free(fa_rank_list[i]);
-    ADIOI_Free(fa_rank_list);
-    ADIOI_Free(fa_rank_list_sz);
-    ADIOI_Free(fd_id_for_proc);
-    ADIOI_Free(fa_id_for_proc);
-}
 
 /* ADIOI_Calc_aggregator()
  *
@@ -513,8 +335,8 @@ void ADIOI_Calc_my_req(ADIO_File fd, ADIO_Offset *offset_list, ADIO_Offset *len_
 	if (count_my_req_per_proc[i]) {
 	    my_req[i].offsets = (ADIO_Offset *)
 		ADIOI_Malloc(count_my_req_per_proc[i] * sizeof(ADIO_Offset));
-	    my_req[i].lens = (int *)
-		ADIOI_Malloc(count_my_req_per_proc[i] * sizeof(int));
+	    my_req[i].lens =
+		ADIOI_Malloc(count_my_req_per_proc[i] * sizeof(ADIO_Offset));
 	    count_my_req_procs++;
 	}	    
 	my_req[i].count = 0;  /* will be incremented where needed
@@ -551,8 +373,7 @@ void ADIOI_Calc_my_req(ADIO_File fd, ADIO_Offset *offset_list, ADIO_Offset *len_
 	 * and the associated count. 
 	 */
 	my_req[proc].offsets[l] = off;
-  ADIOI_Assert(fd_len == (int) fd_len);
-	my_req[proc].lens[l] = (int) fd_len;
+	my_req[proc].lens[l] = fd_len;
 	my_req[proc].count++;
 
 	while (rem_len != 0) {
@@ -572,8 +393,7 @@ void ADIOI_Calc_my_req(ADIO_File fd, ADIO_Offset *offset_list, ADIO_Offset *len_
 	    rem_len -= fd_len;
 
 	    my_req[proc].offsets[l] = off;
-      ADIOI_Assert(fd_len == (int) fd_len);
-	    my_req[proc].lens[l] = (int) fd_len;
+	    my_req[proc].lens[l] = fd_len;
 	    my_req[proc].count++;
 	}
     }
@@ -641,8 +461,8 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
 	    others_req[i].count = count_others_req_per_proc[i];
 	    others_req[i].offsets = (ADIO_Offset *)
 		ADIOI_Malloc(count_others_req_per_proc[i]*sizeof(ADIO_Offset));
-	    others_req[i].lens = (int *)
-		ADIOI_Malloc(count_others_req_per_proc[i]*sizeof(int)); 
+	    others_req[i].lens =
+		ADIOI_Malloc(count_others_req_per_proc[i]*sizeof(ADIO_Offset));
 	    others_req[i].mem_ptrs = (MPI_Aint *)
 		ADIOI_Malloc(count_others_req_per_proc[i]*sizeof(MPI_Aint)); 
 	    count_others_req_procs++;
@@ -663,7 +483,7 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
                       ADIO_OFFSET, i, i+myrank, fd->comm, &requests[j]);
 	    j++;
 	    MPI_Irecv(others_req[i].lens, others_req[i].count, 
-                      MPI_INT, i, i+myrank+1, fd->comm, &requests[j]);
+                      ADIO_OFFSET, i, i+myrank+1, fd->comm, &requests[j]);
 	    j++;
 	}
     }
@@ -674,7 +494,7 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
                       ADIO_OFFSET, i, i+myrank, fd->comm, &requests[j]);
 	    j++;
 	    MPI_Isend(my_req[i].lens, my_req[i].count, 
-                      MPI_INT, i, i+myrank+1, fd->comm, &requests[j]);
+                      ADIO_OFFSET, i, i+myrank+1, fd->comm, &requests[j]);
 	    j++;
 	}
     }
@@ -693,7 +513,3 @@ void ADIOI_Calc_others_req(ADIO_File fd, int count_my_req_procs,
     MPE_Log_event (5027, 0, NULL);
 #endif
 }
-
-/* 
- * vim: ts=8 sts=4 sw=4 noexpandtab 
- */

@@ -29,7 +29,7 @@
 // this is needed to use SSD
 // cache without native BeeGFS
 // support
-#define BEEGFS_UFS_CACHE_TEST
+//#define BEEGFS_UFS_CACHE_TEST
 
 /* synchronisation routines */
 int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...);

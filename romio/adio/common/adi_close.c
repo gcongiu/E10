@@ -37,7 +37,6 @@ void ADIOI_GEN_Close(ADIO_File fd, int *error_code)
 
     fd->fd_sys    = -1;
     fd->fd_direct = -1;
-    fd->is_open   = 0;
 
     if (err == -1 || derr == -1) {
 	*error_code = ADIOI_Err_create_code(myname, fd->filename, errno);

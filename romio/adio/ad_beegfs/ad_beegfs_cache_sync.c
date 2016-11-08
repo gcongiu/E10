@@ -26,7 +26,7 @@ int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
     *t = (struct ADIOI_Sync_thread *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_thread));
 
     /* get thread params */
-    va_start(args, item);
+    va_start(args, t);
     (*t)->fd_ = va_arg(args, ADIO_File);
     va_end(args);
 

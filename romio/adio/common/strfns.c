@@ -6,9 +6,7 @@
  */
 
 #include "adio.h"
-#ifndef PATH_MAX
-#define PATH_MAX 65535
-#endif
+
 /* style: allow:sprintf:3 sig:0 */
 
 /* 

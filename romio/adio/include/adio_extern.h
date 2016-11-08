@@ -29,7 +29,3 @@ extern MPI_Info ADIOI_syshints;
 extern MPI_Op ADIO_same_amode;
 
 extern int ADIOI_cb_config_list_keyval;
-
-#ifdef ADIOI_MPE_LOGGING
-//extern int MPE_Log_event (int event, int data, const char *bytebuf);
-#endif

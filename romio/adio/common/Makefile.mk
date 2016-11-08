@@ -66,7 +66,10 @@ romio_other_sources +=                  \
     adio/common/status_setb.c           \
     adio/common/strfns.c                \
     adio/common/system_hints.c          \
-    adio/common/hint_fns.c		\
+    adio/common/hint_fns.c              \
+    adio/common/ad_threaded_io.c        \
+    adio/common/p2p_aggregation.c       \
+    adio/common/utils.c                 \
     adio/common/adi_cache_sync.c	\
     adio/common/adi_atomic_queue.c      \
     adio/common/adi_cache_alloc.c

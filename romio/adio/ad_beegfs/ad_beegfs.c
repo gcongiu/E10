@@ -37,6 +37,7 @@ struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
     ADIOI_GEN_Resize, /* Resize */
     ADIOI_GEN_Delete, /* Delete */
     ADIOI_GEN_Feature, /* Features */
+    "BEEGFS: Native BeeGFS driver for ROMIO", 
 };
 #else
 struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
@@ -69,5 +70,6 @@ struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
     ADIOI_GEN_Resize, /* Resize */
     ADIOI_GEN_Delete, /* Delete */
     ADIOI_GEN_Feature, /* Features */
+    "BEEGFS+UFS: Test BeeGFS driver using UFS caching",
 };
 #endif

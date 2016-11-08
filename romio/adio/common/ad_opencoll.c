@@ -1,10 +1,8 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
-/*
+/* 
  *
  *   Copyright (C) 2007 UChicago/Argonne LLC
  *   See COPYRIGHT notice in top-level directory.
- *
- *   Copyright (C) 2014-2016 Seagate Systems UK Ltd.
  */
 
 #include "adio.h"
@@ -14,20 +12,19 @@
  *
  * optimization: by having just one process create a file, close it,
  * then have all N processes open it, we can possibly avoid contention
- * for write locks on a directory for some file systems.
+ * for write locks on a directory for some file systems.  
  *
  * Happy side-effect: exclusive create (error if file already exists)
- * just falls out
+ * just falls out 
  *
  * Note: this is not a "scalable open" (c.f. "The impact of file systems
- * on MPI-IO scalability").
+ * on MPI-IO scalability").  
  */
-
-void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
+     
+void ADIOI_GEN_OpenColl(ADIO_File fd, int rank, 
 	int access_mode, int *error_code)
 {
-    int orig_amode_excl, orig_amode_wronly, max_error_code;
-    int myrank;
+    int orig_amode_excl, orig_amode_wronly, myrank, max_error_code;
     MPI_Comm tmp_comm;
 
     orig_amode_excl = access_mode;
@@ -66,7 +63,6 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	fd->cache_fd->fortran_handle = fd->fortran_handle;
 	fd->cache_fd->err_handler = fd->err_handler;
 	fd->cache_fd->info = MPI_INFO_NULL;
-	fd->cache_fd->agg_comm = MPI_COMM_NULL;
 	fd->cache_fd->access_mode = ADIO_CREATE | ADIO_RDWR;
 
 	/* check discard flag and set delete on close for cache file */
@@ -142,14 +138,14 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	}
     }
 
-    if (access_mode & ADIO_CREATE) {
+    if (access_mode & ADIO_CREATE ){
        if(rank == fd->hints->ranklist[0]) {
 	   /* remove delete_on_close flag if set */
 	   if (access_mode & ADIO_DELETE_ON_CLOSE)
 	       fd->access_mode = access_mode ^ ADIO_DELETE_ON_CLOSE;
-	   else
+	   else 
 	       fd->access_mode = access_mode;
-
+	       
 	   tmp_comm = fd->comm;
 	   fd->comm = MPI_COMM_SELF;
 	   (*(fd->fns->ADIOI_xxx_Open))(fd, error_code);
@@ -157,7 +153,7 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 	   MPI_Bcast(error_code, 1, MPI_INT, \
 		     fd->hints->ranklist[0], fd->comm);
 	   /* if no error, close the file and reopen normally below */
-	   if (*error_code == MPI_SUCCESS)
+	   if (*error_code == MPI_SUCCESS) 
 	       (*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
 
 	   fd->access_mode = access_mode; /* back to original */
@@ -165,31 +161,40 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
        else MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
 
        if (*error_code != MPI_SUCCESS) {
-	   if (fd->cache_fd && fd->cache_fd->is_open)
-	       (*(fd->fns->ADIOI_xxx_Close))(fd->cache_fd, &max_error_code);
 	   return;
-       }
+       } 
        else {
            /* turn off CREAT (and EXCL if set) for real multi-processor open */
-           access_mode ^= ADIO_CREATE;
+           access_mode ^= ADIO_CREATE; 
 	   if (access_mode & ADIO_EXCL)
 		   access_mode ^= ADIO_EXCL;
        }
     }
+    fd->blksize = 1024*1024*4; /* this large default value should be good for
+				 most file systems.  any ROMIO driver is free
+				 to stat the file and find an optimial value */
 
     /* if we are doing deferred open, non-aggregators should return now */
     if (fd->hints->deferred_open ) {
-        if (fd->agg_comm == MPI_COMM_NULL) {
+        if (!(fd->is_agg)) {
             /* we might have turned off EXCL for the aggregators.
              * restore access_mode that non-aggregators get the right
              * value from get_amode */
             fd->access_mode = orig_amode_excl;
-            *error_code = MPI_SUCCESS;
+	    /* In file-system specific open, a driver might collect some
+	     * information via stat().  Deferred open means not every process
+	     * participates in fs-specific open, but they all participate in
+	     * this open call.  Broadcast a bit of information in case
+	     * lower-level file system driver (e.g. 'bluegene') collected it
+	     * (not all do)*/
+	    MPI_Bcast(&(fd->blksize), 1, MPI_LONG, fd->hints->ranklist[0], fd->comm);
+	    *error_code = MPI_SUCCESS;
+	    ADIOI_Assert(fd->blksize > 0);
 	    return;
-        }
+	}
     }
 
-/* For writing with data sieving, a read-modify-write is needed. If
+/* For writing with data sieving, a read-modify-write is needed. If 
    the file is opened for write_only, the read will fail. Therefore,
    if write_only, open the file as read_write, but record it as write_only
    in fd, so that get_amode returns the right answer. */
@@ -207,20 +212,27 @@ void ADIOI_GEN_OpenColl(ADIO_File fd, int rank,
 
     (*(fd->fns->ADIOI_xxx_Open))(fd, error_code);
 
-    /* if error, may be it was due to the change in amode above.
-       therefore, reopen with access mode provided by the user.*/
-    fd->access_mode = orig_amode_wronly;
-    if (*error_code != MPI_SUCCESS)
+    /* if error, may be it was due to the change in amode above. 
+       therefore, reopen with access mode provided by the user.*/ 
+    fd->access_mode = orig_amode_wronly;  
+    if (*error_code != MPI_SUCCESS) 
         (*(fd->fns->ADIOI_xxx_Open))(fd, error_code);
 
     /* if we turned off EXCL earlier, then we should turn it back on */
     if (fd->access_mode != orig_amode_excl) fd->access_mode = orig_amode_excl;
 
+    /* broadcast a bit of information (blocksize for now) to all proceses in
+     * communicator, not just those who participated in open */
+    MPI_Bcast(&(fd->blksize), 1, MPI_LONG, fd->hints->ranklist[0], fd->comm);
+    /* file domain code will get terribly confused in a hard-to-debug way if
+     * gpfs blocksize not sensible */
+    ADIOI_Assert( fd->blksize > 0);
     /* for deferred open: this process has opened the file (because if we are
      * not an aggregaor and we are doing deferred open, we returned earlier)*/
     fd->is_open = 1;
+
 }
 
-/*
- * vim: ts=8 sts=4 sw=4 noexpandtab
+/* 
+ * vim: ts=8 sts=4 sw=4 noexpandtab 
  */
