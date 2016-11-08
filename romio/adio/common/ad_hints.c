@@ -120,10 +120,23 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	ADIOI_Info_set(info, "romio_ds_write", "automatic"); 
 	fd->hints->ds_write = ADIOI_HINT_AUTO;
 
+	/* set e10_cache mode to default */
+	ADIOI_Info_set( fd->info, "e10_cache", "disable" );
+	ADIOI_Info_set( fd->info, "e10_cache_flush_flag", "flush_immediate" );
+	ADIOI_Info_set( fd->info, "e10_cache_discard_flag", "enable" );
+	ADIOI_Info_set( fd->info, "e10_cache_path", "" );
+	ADIOI_Info_set( fd->info, "e10_cache_threads", "1" );
+	fd->hints->e10_cache = ADIOI_HINT_DISABLE;
+	fd->hints->e10_cache_coherent = ADIOI_HINT_DISABLE;
+	fd->hints->e10_cache_discard_flag = ADIOI_HINT_ENABLE;
+	fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHIMMEDIATE;
+	fd->hints->e10_cache_path = NULL;
+	fd->hints->e10_cache_threads = 1;
+
 	/* still to do: tune this a bit for a variety of file systems. there's
 	 * no good default value so just leave it unset */
 	fd->hints->min_fdomain_size = 0;
-  fd->hints->striping_unit = 0;
+	fd->hints->striping_unit = 0;
 
 	fd->hints->initialized = 1;
 
@@ -246,6 +259,62 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	   process hints for it. */
 	ADIOI_Info_check_and_install_int(fd, users_info, "striping_unit", 
 		&(fd->hints->striping_unit), myname, error_code);
+
+	ADIOI_Info_get(users_info, "e10_cache", MPI_MAX_INFO_VAL, value, &flag);
+	if (flag) {
+	    if (!strcmp(value, "enable") || !strcmp(value, "ENABLE")) {
+		ADIOI_Info_set(fd->info, "e10_cache", "enable");
+		fd->hints->e10_cache = ADIOI_HINT_ENABLE;
+		fd->hints->e10_cache_coherent = ADIOI_HINT_DISABLE;
+	    }
+	    else if (!strcmp(value, "coherent") || !strcmp(value, "COHERENT")) {
+		ADIOI_Info_set(fd->info, "e10_cache", "enable");
+		fd->hints->e10_cache = ADIOI_HINT_ENABLE;
+		fd->hints->e10_cache_coherent = ADIOI_HINT_ENABLE;
+	    }
+	    else {
+		ADIOI_Info_set(fd->info, "e10_cache", "disable");
+		fd->hints->e10_cache = ADIOI_HINT_DISABLE;
+	    }
+	}
+	if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
+	    ADIOI_Info_get(users_info, "e10_cache_flush_flag", MPI_MAX_INFO_VAL, value, &flag);
+	    if (flag) {
+		if (!strcmp( value, "flush_immediate" ) || !strcmp( value, "FLUSH_IMMEDIATE")) {
+		    ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_immediate");
+		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHIMMEDIATE;
+		}
+		else if (!strcmp( value, "flush_onclose") || !strcmp(value, "FLUSH_ONCLOSE")) {
+		    ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_onclose");
+		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHONCLOSE;
+		}
+		else if (!strcmp( value, "flush_none") || !strcmp(value, "FLUSH_NONE")) {
+		    ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_none");
+		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHNONE;
+		}
+	    }
+	    ADIOI_Info_get(users_info, "e10_cache_discard_flag", MPI_MAX_INFO_VAL, value, &flag);
+	    if (flag) {
+		if (!strcmp(value, "enable") || !strcmp(value, "ENABLE")) {
+		    ADIOI_Info_set(fd->info, "e10_cache_discard_flag", "enable");
+		    fd->hints->e10_cache_discard_flag = ADIOI_HINT_ENABLE;
+		}
+		else if (!strcmp(value, "disable") || !strcmp(value, "DISABLE")) {
+		    ADIOI_Info_set(fd->info, "e10_cache_discard_flag", "disable");
+		    fd->hints->e10_cache_discard_flag = ADIOI_HINT_DISABLE;
+		}
+	    }
+	    ADIOI_Info_get(fd->info, "e10_cache_threads", MPI_MAX_INFO_VAL, value, &flag);
+	    if (flag) {
+		ADIOI_Info_set(fd->info, "e10_cache_threads", value);
+		fd->hints->e10_cache_threads = atoi(value);
+	    }
+	    ADIOI_Info_get(users_info, "e10_cache_path", MPI_MAX_INFO_VAL, value, &flag);
+	    if (flag) {
+		ADIOI_Info_set(fd->info, "e10_cache_path", value);
+		fd->hints->e10_cache_path = ADIOI_Strdup(value);
+	    }
+	}
     }
 
     /* Begin hint post-processig: some hints take precidence over or conflict

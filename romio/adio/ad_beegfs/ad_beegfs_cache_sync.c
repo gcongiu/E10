@@ -109,7 +109,7 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
     ADIOI_Sync_req_t r;
     int retval, count, fflags, error_code;
     ADIO_Offset offset, len;
-    MPI_Aint lb, extent;
+    MPI_Count datatype_size;
     MPI_Datatype datatype;
     ADIO_Request *req;
     char myname[] = "ADIOI_BEEGFS_SYNC_THREAD_START";
@@ -120,8 +120,8 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
     ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 	    &datatype, &count, &req, &error_code, &fflags);
 
-    MPI_Type_get_extent(datatype, &lb, &extent );
-    len = (ADIO_Offset)extent * (ADIO_Offset)count;
+    MPI_Type_size_x(datatype, &datatype_size);
+    len = (ADIO_Offset)datatype_size * (ADIO_Offset)count;
 
     retval = deeper_cache_flush_range(t->fd_->filename, (off_t)offset, (size_t)len, fflags);
 

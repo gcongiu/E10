@@ -22,8 +22,11 @@
  * NOTE: pass fields as they are defined in adi_atomic_queue.h
  */
 int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
-
     int type, ret = MPI_SUCCESS;
+    ADIO_Offset offset;
+    MPI_Datatype datatype;
+    int count, fflags;
+    ADIO_Request *req;
     va_list args;
 
     *r = (struct ADIOI_Sync_req *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_req));
@@ -33,22 +36,26 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
 
     switch (type) {
 	case ADIOI_THREAD_SYNC: {
+	    offset = va_arg(args, ADIO_Offset);
+	    datatype = va_arg(args, MPI_Datatype);
+	    count = va_arg(args, int);
+	    req = va_arg(args, ADIO_Request*);
+	    fflags = va_arg(args, int);
 	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
 		    type,
-		    va_arg(args, ADIO_Offset),
-		    va_arg(args, MPI_Datatype),
-		    va_arg(args, int),
-		    va_arg(args, ADIO_Request*),
+		    offset,
+		    datatype,
+		    count,
+		    req,
 		    MPI_SUCCESS,
-		    va_arg(args, int));
+		    fflags);
 	    break;
 	}
 	case ADIOI_THREAD_SHUTDOWN: {
+	    req = va_arg(args, ADIO_Request*);
 	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_TYPE, type);
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_REQ,
-		    va_arg(args, ADIO_Request*));
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ERR_CODE,
-		    MPI_SUCCESS);
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_REQ, req);
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ERR_CODE, MPI_SUCCESS);
 	    break;
 	}
 	default:
@@ -64,7 +71,6 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
  * ADIOI_Sync_req_init_from - initialise synchronisation request using existing one
  */
 int ADIOI_Sync_req_init_from(ADIOI_Sync_req_t *new, ADIOI_Sync_req_t old) {
-
     return ADIOI_Sync_req_init(new, old->type_, old->off_, old->datatype_,
 	    old->count_, old->req_, old->fflags_);
 }
@@ -73,7 +79,6 @@ int ADIOI_Sync_req_init_from(ADIOI_Sync_req_t *new, ADIOI_Sync_req_t old) {
  * ADIOI_Sync_req_fini - finilise synchronisation request
  */
 int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r) {
-
     ADIOI_Free(*r);
     return MPI_SUCCESS;
 }
@@ -87,7 +92,6 @@ int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r) {
  *
  */
 int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
-
     int *error_code, *count, *fflags, ret = MPI_SUCCESS;
     int key, *type;
     ADIO_Offset *off;
@@ -198,7 +202,6 @@ int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
  *
  */
 int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
-
     int key, ret = MPI_SUCCESS;
     va_list args;
 
@@ -256,7 +259,6 @@ int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
  * ADIOI_Atomic_queue_init - initialise the atomic queue
  */
 void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
-
     /* alloc mem for queue */
     *q = (struct ADIOI_Atomic_queue *)ADIOI_Malloc(sizeof(struct ADIOI_Atomic_queue));
     INIT_LIST_HEAD(&((*q)->head_));
@@ -295,7 +297,6 @@ void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
  *
  */
 void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *q) {
-
     struct ADIOI_Sync_req_env *env;
 
     /* remove and free empty envelop */
@@ -314,7 +315,6 @@ void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *q) {
  * ADIOI_Atomic_queue_empty - returns 1 if the queue is empty
  */
 int ADIOI_Atomic_queue_empty(ADIOI_Atomic_queue_t q) {
-
     return (q->size_ > 0) ? 0 : 1;
 }
 
@@ -322,7 +322,6 @@ int ADIOI_Atomic_queue_empty(ADIOI_Atomic_queue_t q) {
  * ADIOI_Atomic_queue_size - return the num of elements in the queue
  */
 int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t q) {
-
     return q->size_;
 }
 
@@ -330,7 +329,6 @@ int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t q) {
  * ADIOI_Atomic_queue_front - return the oldest element in the queue
  */
 ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
-
     struct ADIOI_Sync_req_env *env;
 
     pthread_mutex_lock(&q->lock_);
@@ -348,7 +346,6 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
  * ADIOI_Atomic_queue_back - return the youngest element in the queue
  */
 ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
-
     struct ADIOI_Sync_req_env *env;
 
     pthread_mutex_lock(&q->lock_);
@@ -368,7 +365,6 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
  * The element memory has been already allocated in the main thread.
  */
 void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
-
     struct ADIOI_Sync_req_env *env;
     int size;
 
@@ -403,7 +399,6 @@ void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
  * ADIOI_Atomic_queue_pop - removes the tail element from the queue
  */
 void ADIOI_Atomic_queue_pop(ADIOI_Atomic_queue_t q) {
-
     struct ADIOI_Sync_req_env *env;
 
     pthread_mutex_lock(&q->lock_);

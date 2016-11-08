@@ -22,7 +22,6 @@ int ADIOI_Sync_req_cancel(void *extra_state, int complete);
  * ADIOI_Sync_thread_init - initialise synchronisation thread
  */
 int ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
-
     int rc, error_code = MPI_SUCCESS;
     va_list args;
 
@@ -53,7 +52,6 @@ int ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
  * ADIOI_Sync_thread_fini - finalise synchronisation thread
  */
 int ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
-
     ADIO_Request *req;
     MPI_Status status;
     ADIOI_Sync_req_t fin;
@@ -93,7 +91,6 @@ int ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
  * ADIOI_Sync_thread_enqueue - enqueue new syn request for thread
  */
 void ADIOI_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r) {
-
     ADIOI_Atomic_queue_push(t->pen_, r);
 }
 
@@ -101,8 +98,7 @@ void ADIOI_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r) {
  * ADIOI_Sync_thread_flush - flush pending requests for thread
  */
 void ADIOI_Sync_thread_flush(ADIOI_Sync_thread_t t) {
-
-    ADIOI_Sync_req_t r, w;
+    ADIOI_Sync_req_t r;
     ADIO_Request *req;
 
     while (!ADIOI_Atomic_queue_empty(t->pen_)) {
@@ -129,19 +125,18 @@ void ADIOI_Sync_thread_flush(ADIOI_Sync_thread_t t) {
  * ADIOI_Sync_thread_wait - wait for ongoing request to complete
  */
 void ADIOI_Sync_thread_wait(ADIOI_Sync_thread_t t) {
-
     ADIOI_Sync_req_t wait, last;
     MPI_Status status;
     ADIO_Request *req;
 
     if (!ADIOI_Atomic_queue_empty(t->wait_)) {
-	last = (ADIOI_Sync_req_t)ADIOI_Atomic_queue_back(t->wait_);
+	last = ADIOI_Atomic_queue_back(t->wait_);
 	ADIOI_Sync_req_get_key(last, ADIOI_SYNC_REQ, &req);
 	MPI_Wait(req, &status);
     }
 
     while (!ADIOI_Atomic_queue_empty(t->wait_)) {
-	wait = (ADIOI_Sync_req_t)ADIOI_Atomic_queue_front(t->wait_);
+	wait = ADIOI_Atomic_queue_front(t->wait_);
 	ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_REQ, &req);
 	ADIOI_Atomic_queue_pop(t->wait_);
 	ADIOI_Sync_req_fini(&wait);
@@ -153,7 +148,6 @@ void ADIOI_Sync_thread_wait(ADIOI_Sync_thread_t t) {
  * ADIOI_Sync_thread_pool_init - initialise synchronisation thread pool
  */
 int ADIOI_Sync_thread_pool_init(ADIO_File fd, ...) {
-
     int rc, i, error_code, nt;
     char myname[] = "ADIOI_SYNC_THREAD_POOL_INIT";
     va_list args;
@@ -191,7 +185,6 @@ int ADIOI_Sync_thread_pool_init(ADIO_File fd, ...) {
  * ADIOI_Sync_thread_pool_fini()
  */
 int ADIOI_Sync_thread_pool_fini(ADIO_File fd) {
-
     int i, nt;
     char myname[] = "ADIOI_SYNC_THREAD_POOL_FINI";
 
@@ -220,12 +213,11 @@ fn_exit:
  * ADIOI_Sync_thread_start - start the synchronisation routine
  */
 void *ADIOI_Sync_thread_start(void *ptr) {
-
     ADIOI_Sync_thread_t t = (ADIOI_Sync_thread_t)ptr;
     ADIOI_Atomic_queue_t q = (ADIOI_Atomic_queue_t)t->sub_;
     ADIOI_Sync_req_t r;
     size_t wr_count;
-    MPI_Aint lb, extent;
+    MPI_Count datatype_size;
     char *buf;
     ADIO_Offset bytes_xfered, len, buf_size, offset, off;
     int type, count, fflags, error_code;
@@ -261,8 +253,8 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 		&datatype, &count, &req, &error_code, &fflags);
 
 	/* init I/O req */
-	MPI_Type_get_extent(datatype, &lb, &extent);
-	len = (ADIO_Offset)extent * (ADIO_Offset)count;
+	MPI_Type_size_x(datatype, &datatype_size);
+	len = (ADIO_Offset)datatype_size * (ADIO_Offset)count;
 	bytes_xfered = 0;
 	off = offset;
 
@@ -307,7 +299,6 @@ void *ADIOI_Sync_thread_start(void *ptr) {
  * ADIOI_Sync_req_query - MPI_Grequest query callback function
  */
 int ADIOI_Sync_req_query(void *extra_state, MPI_Status *status) {
-
     ADIOI_Sync_req_t r = (ADIOI_Sync_req_t)extra_state;
     int type, count;
     int error_code;
