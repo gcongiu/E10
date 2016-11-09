@@ -52,10 +52,14 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
 	    break;
 	}
 	case ADIOI_THREAD_SHUTDOWN: {
-	    req = va_arg(args, ADIO_Request*);
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_TYPE, type);
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_REQ, req);
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ERR_CODE, MPI_SUCCESS);
+	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
+		    type,
+		    0,
+		    MPI_DATATYPE_NULL,
+		    0,
+		    MPI_REQUEST_NULL,
+		    MPI_SUCCESS,
+		    0);
 	    break;
 	}
 	default:

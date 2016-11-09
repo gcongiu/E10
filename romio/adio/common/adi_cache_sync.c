@@ -27,7 +27,7 @@ int ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
 
     *t = (struct ADIOI_Sync_thread *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_thread));
     pthread_attr_init(&((*t)->attr_));
-    pthread_attr_setdetachstate(&((*t)->attr_), PTHREAD_CREATE_DETACHED);
+    pthread_attr_setdetachstate(&((*t)->attr_), PTHREAD_CREATE_JOINABLE);
 
     /* get thread params */
     va_start(args, t);
@@ -57,21 +57,13 @@ int ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
     ADIOI_Sync_req_t fin;
 
     /* init fin request */
-    req = (ADIO_Request *)ADIOI_Malloc(sizeof(ADIO_Request));
-    *req = MPI_REQUEST_NULL;
-    ADIOI_Sync_req_init(&fin, ADIOI_THREAD_SHUTDOWN, req);
-
-    /* start Grequest */
-    MPI_Grequest_start(&ADIOI_Sync_req_query,
-		       &ADIOI_Sync_req_free,
-		       &ADIOI_Sync_req_cancel,
-		       (void *)fin, req);
+    ADIOI_Sync_req_init(&fin, ADIOI_THREAD_SHUTDOWN);
 
     /* submit fin request */
     ADIOI_Atomic_queue_push((*t)->sub_, fin);
 
-    /* MPI_Wait() */
-    MPI_Wait(req, &status);
+    /* join the sync thread */
+    pthread_join((*t)->tid_, NULL);
 
     /* fini fin request */
     ADIOI_Sync_req_fini(&fin);
@@ -82,7 +74,6 @@ int ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
     ADIOI_Atomic_queue_fini(&((*t)->wait_));
 
     ADIOI_Free(*t);
-    ADIOI_Free(req);
 
     return MPI_SUCCESS;
 }
@@ -243,8 +234,6 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 
 	/* check for shutdown type */
 	if (type == ADIOI_THREAD_SHUTDOWN) {
-	    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_REQ, &req);
-	    MPI_Grequest_complete(*req);
 	    break;
 	}
 
