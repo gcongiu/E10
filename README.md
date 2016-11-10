@@ -16,36 +16,10 @@ and more generally, any I/O operation. The new memory tier in the DEEP-ER Protot
 available to applications through the MPI-IO interface by means of additional hints, described 
 in detail in the rest of this document. The new hints rely on the underlying Exascale10 code 
 inside ROMIO to efficiently move data to and from the cache layer. Figure 1 shows the E10
-software stack. The Exascale10 code comes in the form a ADIO plugin in the existing GEN layer
-implementation, used by the UFS driver as well as other file system drivers.
+architecture. The Exascale10 code comes in the form a cache plugin in the existing common layer
+implementation, used by the UFS driver (ad_ufs) as well as other file system drivers.
 
-                   +-----------------------------+
-                   |                             |
-                   |           MPIWRAP           |
-                   |                             |
-            ---    +-----------------------------+
-             ^     |                             |
-             |     |           MPI-IO            |
-             |     |                             |
-             |     +-----------------------------+
-             |     |                             |
-             |     |  ADIO (Abstract Device IO)  |
-             |     |                             |
-           ROMIO   +----------+----------+-------+
-             |     |          |          |       |
-             |     |  BEEGFS  |  Lustre  |  UFS  |
-             |     |          |          |       |
-             |     +----------+----------+-------+
-             |     |             +------------+  |
-             |     |  GEN layer  | E10 Plugin |  |
-             v     |             +------------+  |
-            ---    +-----------------------------+
-                   |                             |
-                   |          POSIX I/O          |
-                   |                             |
-                   +-----------------------------+
-                 Figure 1: Exascale10 software stack
-
+![Alt text](design/romio-architecture-src.jpg?raw=true “New ROMIO Architecture with E10 Extensions”)
 
 #Exascale10 hints extensions for MPI-IO
 

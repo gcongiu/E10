@@ -1,0 +1,71 @@
+graph change {
+  node [shape=box];
+
+  {rank = same;
+  App1 [shape="invhouse"];
+  App2 [shape="invhouse"];
+  App3 [shape="invhouse"];
+  }
+  App1 -- HDF5 ;
+  App2 -- "MPIWRAP";
+  App3 -- "MPI-IO interface";
+
+  HDF5  [shape="component",fillcolor="orchid",style=filled];
+
+  HDF5 -- "MPIWRAP";
+
+  "MPIWRAP" [shape=component,fillcolor=cadetblue, style=filled];
+
+  "MPIWRAP" -- "MPI-IO interface";
+
+  subgraph cluster_romio {
+    "MPI-IO interface" [shape="ellipse", style=dotted];
+    "ADIO interface" [fillcolor="palegreen",style=filled];
+
+    "MPI-IO interface" -- "ADIO interface";
+
+    {rank = same;
+    "ad_lustre" [fillcolor="palegreen",style=filled];
+    "ad_gpfs" [fillcolor="bisque", style=filled];
+    "ad_beegfs" [fillcolor="cadetblue", style=filled];
+    "ad_ufs" [fillcolor="seashell", style=filled];
+    }
+
+    {rank=same;
+    "common" [fillcolor="blueviolet", style=filled];
+    "cache plugin" [fillcolor="cadetblue", style=filled];
+    }
+
+    "cache plugin" -- "common";
+    //"ADIO interface" -- "common";
+    "ADIO interface" -- "ad_beegfs";
+    "ADIO interface" -- "ad_lustre";
+    "ADIO interface" -- "ad_gpfs";
+    "ADIO interface" -- "ad_ufs";
+    "common" -- "ad_beegfs" [style=dotted];
+    "common" -- "ad_lustre" [style=dotted];
+    "common" -- "ad_gpfs" [style=dotted];
+    "common" -- "ad_ufs" [style=dotted];
+    //"common" -- "BeeGFS";
+    //"common" -- "Lustre";
+    //"common" -- "GPFS";
+
+    "ad_lustre" -- "Lustre";
+    "ad_gpfs" -- "GPFS";
+    "ad_beegfs" -- "BeeGFS";
+    "ad_ufs" -- "Lustre";
+    "ad_ufs" -- "BeeGFS";
+    "ad_ufs" -- "GPFS";
+
+    label="ROMIO";
+    labeljust="l";
+    //graph[style=filled, fillcolor=grey];
+    graph[style=dotted];
+  }
+
+  {rank=same;
+  "GPFS" [shape="component",fillcolor="tomato",style=filled];
+  "Lustre" [shape="component",fillcolor="tomato",style=filled];
+  "BeeGFS" [shape="component",fillcolor="tomato",style=filled];
+  }
+}
