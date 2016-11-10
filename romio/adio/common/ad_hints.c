@@ -121,11 +121,11 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	fd->hints->ds_write = ADIOI_HINT_AUTO;
 
 	/* set e10_cache mode to default */
-	ADIOI_Info_set( fd->info, "e10_cache", "disable" );
-	ADIOI_Info_set( fd->info, "e10_cache_flush_flag", "flush_immediate" );
-	ADIOI_Info_set( fd->info, "e10_cache_discard_flag", "enable" );
-	ADIOI_Info_set( fd->info, "e10_cache_path", "" );
-	ADIOI_Info_set( fd->info, "e10_cache_threads", "1" );
+	ADIOI_Info_set(fd->info, "e10_cache", "disable");
+	ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_immediate");
+	ADIOI_Info_set(fd->info, "e10_cache_discard_flag", "enable");
+	ADIOI_Info_set(fd->info, "e10_cache_path", "");
+	ADIOI_Info_set(fd->info, "e10_cache_threads", "1");
 	fd->hints->e10_cache = ADIOI_HINT_DISABLE;
 	fd->hints->e10_cache_coherent = ADIOI_HINT_DISABLE;
 	fd->hints->e10_cache_discard_flag = ADIOI_HINT_ENABLE;
@@ -280,7 +280,7 @@ void ADIOI_GEN_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code)
 	if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
 	    ADIOI_Info_get(users_info, "e10_cache_flush_flag", MPI_MAX_INFO_VAL, value, &flag);
 	    if (flag) {
-		if (!strcmp( value, "flush_immediate" ) || !strcmp( value, "FLUSH_IMMEDIATE")) {
+		if (!strcmp(value, "flush_immediate") || !strcmp(value, "FLUSH_IMMEDIATE")) {
 		    ADIOI_Info_set(fd->info, "e10_cache_flush_flag", "flush_immediate");
 		    fd->hints->e10_cache_flush_flag = ADIOI_HINT_FLUSHIMMEDIATE;
 		}

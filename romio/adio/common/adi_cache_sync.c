@@ -52,8 +52,6 @@ int ADIOI_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
  * ADIOI_Sync_thread_fini - finalise synchronisation thread
  */
 int ADIOI_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
-    ADIO_Request *req;
-    MPI_Status status;
     ADIOI_Sync_req_t fin;
 
     /* init fin request */
@@ -289,22 +287,17 @@ void *ADIOI_Sync_thread_start(void *ptr) {
  */
 int ADIOI_Sync_req_query(void *extra_state, MPI_Status *status) {
     ADIOI_Sync_req_t r = (ADIOI_Sync_req_t)extra_state;
-    int type, count;
+    int count;
     int error_code;
     MPI_Datatype datatype;
 
     ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ERR_CODE, &error_code);
-    
-    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_TYPE, &type);
-
-    if (type == ADIOI_THREAD_SYNC) {
-	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_DATATYPE, &datatype);
-	ADIOI_Sync_req_get_key(r, ADIOI_SYNC_COUNT, &count);
-    }
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_DATATYPE, &datatype);
+    ADIOI_Sync_req_get_key(r, ADIOI_SYNC_COUNT, &count);
 
     MPI_Status_set_cancelled(status, 0);
 
-    if(error_code == MPI_SUCCESS && type == ADIOI_THREAD_SYNC)
+    if(error_code == MPI_SUCCESS)
         MPI_Status_set_elements(status, datatype, count);
 
     status->MPI_SOURCE = MPI_UNDEFINED;
