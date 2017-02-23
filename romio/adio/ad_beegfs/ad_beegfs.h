@@ -31,6 +31,9 @@
 // support
 //#define BEEGFS_UFS_CACHE_TEST
 
+/* debug message */
+void DEBEEG(int myrank, const char *func_name);
+
 /* synchronisation routines */
 int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...);
 int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t);

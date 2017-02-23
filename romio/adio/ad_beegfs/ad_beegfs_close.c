@@ -13,38 +13,46 @@
 #include <unistd.h>
 #endif
 
-void ADIOI_BEEGFS_Close( ADIO_File fd, int *error_code )
-{
+void ADIOI_BEEGFS_Close(ADIO_File fd, int *error_code) {
     int err, derr = 0;
     static char myname[] = "ADIOI_BEEGFS_CLOSE";
+    int myrank;
+
+    MPI_Comm_rank(fd->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
 #ifdef ADIOI_MPE_LOGGING
-    MPE_Log_event( ADIOI_MPE_close_a, 0, NULL );
+    MPE_Log_event(ADIOI_MPE_close_a, 0, NULL);
 #endif
-
-#ifndef BEEGFS_UFS_CACHE_TEST
-    err = (fd->hints->e10_cache == ADIOI_HINT_ENABLE) ?
-	    deeper_cache_close( fd->fd_sys ) :
-	    close( fd->fd_sys );
-
-    if ( fd->thread_pool ) {
-        ADIOI_BEEGFS_Sync_thread_fini( &fd->thread_pool[0] );
-	ADIOI_Free(fd->thread_pool);
+    /* select the appropriate close mechanism */
+    if (fd->fns == &ADIO_BEEGFS_operations) {
+        if (fd->thread_pool) {
+	    (*(fd->fns->ADIOI_xxx_Flush))(fd, error_code);
+	    ADIOI_BEEGFS_Sync_thread_fini(&fd->thread_pool[0]);
+	    ADIOI_Free(fd->thread_pool);
+	    err = deeper_cache_close(fd->fd_sys);
+	} else {
+	    err = close(fd->fd_sys);
+	}
+    } else if (fd->fns == &ADIO_BEEGFS_UFS_CACHE_operations) {
+	/* 
+	 * Whenever BeeGFS is used with the UFS 
+	 * UFS cache support built inside ROMIO.
+	 * open() and close() will be used instead. 
+	 * The thread_pool in this case will be 
+	 * finalised by ADIO_Close().
+	 */
+	err = close(fd->fd_sys);
     }
-
-#else
-    close( fd->fd_sys );
-#endif
-
 #ifdef ADIOI_MPE_LOGGING
-    MPE_Log_event( ADIOI_MPE_close_b, 0, NULL );
+    MPE_Log_event(ADIOI_MPE_close_b, 0, NULL);
 #endif
 
     fd->fd_sys    = -1;
     fd->fd_direct = -1;
 
-    if( err == -1 || derr == -1 ) {
-	*error_code = ADIOI_Err_create_code( myname, fd->filename, errno );
+    if (err == -1 || derr == -1) {
+	*error_code = ADIOI_Err_create_code(myname, fd->filename, errno);
     }
     else *error_code = MPI_SUCCESS;
 

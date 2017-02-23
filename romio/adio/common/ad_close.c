@@ -58,14 +58,13 @@ void ADIO_Close(ADIO_File fd, int *error_code)
     }
 
     if (fd->hints->deferred_open && fd->is_agg) {
-	    (*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
+	(*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
     } else {
-	    if(fd->is_open)  {
-		    (*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
-	    } else {
-		    *error_code = MPI_SUCCESS;
-	    }
-	    
+	if(fd->is_open)  {
+	    (*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
+	} else {
+	    *error_code = MPI_SUCCESS;
+	}
     }
 
     if (fd->access_mode & ADIO_DELETE_ON_CLOSE) {

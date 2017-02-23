@@ -13,10 +13,10 @@
 #include <assert.h>
 
 /* local functions prototypes */
-void *ADIOI_Sync_thread_start(void *);
-int ADIOI_Sync_req_query(void *extra_state, MPI_Status *status);
-int ADIOI_Sync_req_free(void *extra_state);
-int ADIOI_Sync_req_cancel(void *extra_state, int complete);
+static void *ADIOI_Sync_thread_start(void *);
+static int ADIOI_Sync_req_query(void *extra_state, MPI_Status *status);
+static int ADIOI_Sync_req_free(void *extra_state);
+static int ADIOI_Sync_req_cancel(void *extra_state, int complete);
 
 /*
  * ADIOI_Sync_thread_init - initialise synchronisation thread
@@ -220,10 +220,12 @@ void *ADIOI_Sync_thread_start(void *ptr) {
 
     for(;;) {
 	/* get a new sync request */
-//	if ((r = ADIOI_Atomic_queue_front(q)) == NULL)
-//	    continue;
+#ifndef _USE_PTHREAD_MUTEX_
+	if ((r = ADIOI_Atomic_queue_front(q)) == NULL)
+	    continue;
+#else
 	r = ADIOI_Atomic_queue_front(q);
-
+#endif
 	/* pop sync request */
 	ADIOI_Atomic_queue_pop(q);
 

@@ -29,6 +29,10 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
     size_t wr_count;
     static char myname[] = "ADIOI_BEEGFS_WRITECONTIG";
     char * p;
+    int myrank;
+
+    MPI_Comm_rank(fd->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
 #ifdef AGGREGATION_PROFILE
     MPE_Log_event (5036, 0, NULL);
@@ -44,27 +48,6 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
 
     if (file_ptr_type == ADIO_INDIVIDUAL) {
 	offset = fh->fp_ind;
-    }
-
-    if (fh->fp_sys_posn != offset) {
-#ifdef ADIOI_MPE_LOGGING
-        MPE_Log_event( ADIOI_MPE_lseek_a, 0, NULL );
-#endif
-	err_lseek = lseek(fh->fd_sys, offset, SEEK_SET);
-#ifdef ADIOI_MPE_LOGGING
-        MPE_Log_event( ADIOI_MPE_lseek_b, 0, NULL );
-#endif
-	/* --BEGIN ERROR HANDLING-- */
-	if (err_lseek == -1) {
-	    *error_code = MPIO_Err_create_code(MPI_SUCCESS,
-					       MPIR_ERR_RECOVERABLE,
-					       myname, __LINE__,
-					       MPI_ERR_IO, "**io",
-					       "**io %s", strerror(errno));
-	    fh->fp_sys_posn = -1;
-	    return;
-	}
-	/* --END ERROR HANDLING-- */
     }
 
     p = (char *)buf;
@@ -116,6 +99,12 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
 
 	if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHIMMEDIATE)
 	    ADIOI_BEEGFS_Sync_thread_flush(*(fd->thread_pool));
+    }
+
+    fd->fp_sys_posn = offset + bytes_xfered;
+
+    if (file_ptr_type == ADIO_INDIVIDUAL) {
+	fd->fp_ind += bytes_xfered;
     }
 
 #ifdef HAVE_STATUS_SET_BYTES

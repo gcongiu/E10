@@ -20,8 +20,7 @@
  * ADIOI_BEEGFS_Sync_thread_init -
  */
 int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
-
-    int item;
+    int item, myrank;
     va_list args;
     *t = (struct ADIOI_Sync_thread *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_thread));
 
@@ -29,6 +28,9 @@ int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
     va_start(args, t);
     (*t)->fd_ = va_arg(args, ADIO_File);
     va_end(args);
+
+    MPI_Comm_rank((*t)->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     /* create queues */
     ADIOI_Atomic_queue_init(&((*t)->sub_));
@@ -42,6 +44,9 @@ int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
  * ADIOI_BEEGFS_Sync_thread_fini -
  */
 int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
+    int myrank;
+    MPI_Comm_rank((*t)->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     ADIOI_Atomic_queue_fini(&((*t)->sub_));
     ADIOI_Atomic_queue_fini(&((*t)->pen_));
@@ -56,6 +61,9 @@ int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
  * ADIOI_BEEGFS_Sync_thread_enqueue -
  */
 void ADIOI_BEEGFS_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r) {
+    int myrank;
+    MPI_Comm_rank(t->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     ADIOI_Sync_thread_enqueue(t, r);
 }
@@ -64,6 +72,9 @@ void ADIOI_BEEGFS_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r)
  * ADIOI_BEEGFS_Sync_thread_flush -
  */
 void ADIOI_BEEGFS_Sync_thread_flush(ADIOI_Sync_thread_t t) {
+    int myrank;
+    MPI_Comm_rank(t->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     ADIOI_Sync_req_t r;
 
@@ -82,17 +93,20 @@ void ADIOI_BEEGFS_Sync_thread_flush(ADIOI_Sync_thread_t t) {
  * ADIOI_BEEGFS_Sync_thread_wait -
  */
 void ADIOI_BEEGFS_Sync_thread_wait(ADIOI_Sync_thread_t t) {
+    int myrank;
+    MPI_Comm_rank(t->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     ADIOI_Sync_thread_wait(t);
 }
 
 static MPIX_Grequest_class ADIOI_BEEGFS_greq_class = 0;
 
-int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status);
-int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states, double timeout, MPI_Status *status);
-int ADIOI_BEEGFS_Sync_req_query(void *extra_state, MPI_Status *status);
-int ADIOI_BEEGFS_Sync_req_free(void *extra_state);
-int ADIOI_BEEGFS_Sync_req_cancel(void *extra_state, int complete);
+static int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status);
+static int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states, double timeout, MPI_Status *status);
+static int ADIOI_BEEGFS_Sync_req_query(void *extra_state, MPI_Status *status);
+static int ADIOI_BEEGFS_Sync_req_free(void *extra_state);
+static int ADIOI_BEEGFS_Sync_req_cancel(void *extra_state, int complete);
 
 /* arguments for callback function */
 struct callback {
@@ -104,7 +118,6 @@ struct callback {
  * ADIOI_BEEGFS_Sync_thread_start - start synchronisation of req
  */
 int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
-
     ADIOI_Atomic_queue_t q = t->sub_;
     ADIOI_Sync_req_t r;
     int retval, count, fflags, error_code;
@@ -113,6 +126,10 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
     MPI_Datatype datatype;
     ADIO_Request *req;
     char myname[] = "ADIOI_BEEGFS_SYNC_THREAD_START";
+    int myrank;
+
+    MPI_Comm_rank(t->fd_->comm, &myrank);
+    DEBEEG(myrank, __func__);
 
     r = ADIOI_Atomic_queue_front(q);
     ADIOI_Atomic_queue_pop(q);
@@ -157,7 +174,6 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
  * ADIOI_BEEGFS_Sync_req_poll -
  */
 int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status) {
-
     struct callback *cb = (struct callback *)extra_state;
     ADIOI_Sync_req_t r = (ADIOI_Sync_req_t)cb->req_;
     ADIO_File fd = (ADIO_File)cb->fd_;
@@ -168,6 +184,11 @@ int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status) {
     MPI_Aint lb, extent;
     ADIO_Offset len;
     ADIO_Request *req;
+    int myrank;
+
+    MPI_Comm_rank(fd->comm, &myrank);
+    DEBEEG(myrank, __func__);
+
 
     ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 	    &datatype, &count, &req, &error_code, &cache_flush_flags);
@@ -208,8 +229,7 @@ fn_exit_error:
 /*
  * ADIOI_BEEGFS_Sync_req_wait -
  */
-int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states,
-			       double timeout, MPI_Status *status) {
+int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states, double timeout, MPI_Status *status) {
     return MPI_SUCCESS;
 }
 

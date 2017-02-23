@@ -395,7 +395,7 @@ static void ADIOI_Exch_and_write(ADIO_File fd, void *buf, MPI_Datatype
 		ADIOI_Sync_thread_pool_fini(fd);
 
 		/* revert to standard collective i/o */
-		FPRINTF(stderr, "[Cache Allocation Error]: reverting to standard implementation.\n");
+		FPRINTF(stderr, "[rank:%d]Cache allocation error, revert to standard implementation.\n", myrank);
 		ADIOI_Info_set(fd->info, "e10_cache", "disable");
 		fd->hints->e10_cache = ADIOI_HINT_DISABLE;
 	    }

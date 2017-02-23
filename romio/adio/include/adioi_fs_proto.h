@@ -55,6 +55,13 @@ extern struct ADIOI_Fns_struct ADIO_LUSTRE_operations;
 #endif
 
 #ifdef ROMIO_BEEGFS
+/* if the BeeGFS API does not support striping use UFS operatiosn*/
+extern struct ADIOI_Fns_struct ADIO_UFS_operations;
+
+/* if the BeeGFS API supports striping but not caching use UFS cache */
+extern struct ADIOI_Fns_struct ADIO_BEEGFS_UFS_CACHE_operations;
+
+/* if the BeeGFS API supports striping and caching use native BeeGFS */
 extern struct ADIOI_Fns_struct ADIO_BEEGFS_operations;
 /* prototypes are in adio/ad_beegfs/ad_beegfs.h */
 #endif

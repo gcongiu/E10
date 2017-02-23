@@ -8,7 +8,6 @@
 #ifndef __ADI_ATOMIC_QUEUE_H__
 #define __ADI_ATOMIC_QUEUE_H__
 
-#define _USE_PTHREAD_MUTEX_
 /*
  * ADIOI_Atomic_queue - contains sync requests for specific thread
  *
@@ -18,10 +17,8 @@
 struct ADIOI_Atomic_queue {
     struct list_head head_;
     int size_;
-#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_t lock_;
     pthread_cond_t ready_;
-#endif
 };
 
 /*

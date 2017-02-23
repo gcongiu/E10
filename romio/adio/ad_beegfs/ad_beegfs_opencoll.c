@@ -8,7 +8,8 @@
 
 #include "adio.h"
 #include "ad_beegfs.h"
-#include <libgen.h>
+#include "adio_extern.h"
+#include "adio_cb_config_list.h"
 
 /* BeeGFS version of a "collective open" */
 void ADIOI_BEEGFS_OpenColl(ADIO_File fd,
@@ -16,11 +17,20 @@ void ADIOI_BEEGFS_OpenColl(ADIO_File fd,
 			   int access_mode,
 			   int *error_code)
 {
-    int orig_amode_excl, orig_amode_wronly, max_error_code, pflags;
+    int orig_amode_excl, orig_amode_wronly, max_error_code;
     int ret = DEEPER_RETVAL_SUCCESS;
+    //int nnodes = 0, found;
     char *pathname = NULL, *dir = NULL;
     char myname[] = "ADIOI_BEEGFS_OPENCOLL";
+    //ADIO_cb_name_array array = NULL;
     MPI_Comm tmp_comm;
+
+    /* get nodes name array */
+    //MPI_Attr_get(fd->comm, ADIOI_cb_config_list_keyval, (void*)&array, &found);
+    //if (found) {
+    //nnodes = array->namect;
+    //}
+    DEBEEG(rank, __func__);
 
     orig_amode_excl = access_mode;
 
@@ -43,13 +53,11 @@ fn_open:
 
 	    /* Prefetch the file's parent dir in the e10_cache FS */
             if(fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-                pflags = DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT;
-
-                ret = deeper_cache_prefetch(dir, pflags);
+		ret = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
+		//ret |= deeper_cache_prefetch_wait(dir, DEEPER_PREFETCH_NONE);
 
                 /* Flush the file in the e10_cache FS to the global FS */
-                fd->cache_oflags = DEEPER_OPEN_FLUSHONCLOSE |
-                                       DEEPER_OPEN_FLUSHWAIT;
+                fd->cache_oflags = DEEPER_OPEN_FLUSHONCLOSE | DEEPER_OPEN_FLUSHWAIT;
 	    } else {
 		ret = DEEPER_RETVAL_SUCCESS;
 	    }
@@ -96,6 +104,8 @@ fn_open:
 
 	if (*error_code != MPI_SUCCESS) {
 	    if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
+		FPRINTF(stderr, "[rank:%d]Error while opening cache file, reverting \ 
+			to standard implementation.\n", rank);
 		ADIOI_Info_set(fd->info, "e10_cache", "disable");
 		fd->hints->e10_cache = ADIOI_HINT_DISABLE;
 		goto fn_open; /* retry using POSIX open */
@@ -151,22 +161,23 @@ fn_open:
 
     /* Now everyone opens the file created before */
     if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-        /* Prefetch the file in the cache FS */
-	//ret = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
-        ret = deeper_cache_prefetch(fd->filename, DEEPER_PREFETCH_WAIT);
+        /* Prefetch the file in the cache FS. Only one process per node can prefetch */
+	ret  = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
+        //ret |= deeper_cache_prefetch_wait(dir, DEEPER_PREFETCH_NONE);
 
-        if (ret == DEEPER_RETVAL_ERROR)
-            FPRINTF(stderr, "[rank:%d]Error while prefetching %s: %s\n",
+        if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
+            FPRINTF(stderr, "[rank:%d]%s prefetching error: %s\n",
 		    rank,
                     fd->filename,
                     strerror(errno));
+	}
 
         /* set the cache open flags for the file in the cache FS */
         fd->cache_oflags = DEEPER_OPEN_NONE;
-        if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHONCLOSE) {
-            fd->cache_oflags  = DEEPER_OPEN_FLUSHONCLOSE;
-            fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
-        }
+        //if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHONCLOSE) {
+        //    fd->cache_oflags  = DEEPER_OPEN_FLUSHONCLOSE;
+        //    fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
+        //}
 
         if (fd->hints->e10_cache_discard_flag == ADIOI_HINT_ENABLE)
             fd->cache_oflags |= DEEPER_OPEN_DISCARD;

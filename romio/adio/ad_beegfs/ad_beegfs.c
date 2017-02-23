@@ -6,7 +6,10 @@
  *   Author: Giuseppe Congiu <giuseppe.congiu@seagate.com>
  */
 #include "ad_beegfs.h"
-#ifndef BEEGFS_UFS_CACHE_TEST
+
+#define DEBEEG(myrank, func_name) \
+    FPRINTF(stderr, "[%s:%d]\n", func_name, myrank);
+
 struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
     ADIOI_BEEGFS_Open, /* Open */
     ADIOI_BEEGFS_OpenColl, /* OpenColl */
@@ -39,8 +42,8 @@ struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
     ADIOI_GEN_Feature, /* Features */
     "BEEGFS: Native BeeGFS driver for ROMIO", 
 };
-#else
-struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
+
+struct ADIOI_Fns_struct ADIO_BEEGFS_UFS_CACHE_operations = {
     ADIOI_BEEGFS_Open, /* Open */
     ADIOI_GEN_OpenColl, /* OpenColl */
     ADIOI_GEN_ReadContig, /* ReadContig */
@@ -70,6 +73,5 @@ struct ADIOI_Fns_struct ADIO_BEEGFS_operations = {
     ADIOI_GEN_Resize, /* Resize */
     ADIOI_GEN_Delete, /* Delete */
     ADIOI_GEN_Feature, /* Features */
-    "BEEGFS+UFS: Test BeeGFS driver using UFS caching",
+    "BEEGFS+UFS: BeeGFS driver using UFS caching",
 };
-#endif

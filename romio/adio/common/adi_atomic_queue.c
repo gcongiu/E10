@@ -266,11 +266,11 @@ void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
     /* alloc mem for queue */
     *q = (struct ADIOI_Atomic_queue *)ADIOI_Malloc(sizeof(struct ADIOI_Atomic_queue));
     INIT_LIST_HEAD(&((*q)->head_));
-
+#ifdef _USE_PTHREAD_MUTEX_
     /* init mutex and cond variable */
     pthread_mutex_init(&(*q)->lock_, NULL);
     pthread_cond_init(&(*q)->ready_, NULL);
-
+#endif
     /* allocate and init empty envelop element */
     struct ADIOI_Sync_req_env *env = (struct ADIOI_Sync_req_env *)
 	ADIOI_Malloc(sizeof(struct ADIOI_Sync_req_env));
@@ -306,11 +306,11 @@ void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *q) {
     /* remove and free empty envelop */
     env = list_entry((*q)->head_.prev, struct ADIOI_Sync_req_env, head_);
     ADIOI_Free(env);
-
+#ifdef _USE_PTHREAD_MUTEX_
     /* fini mutex and cond variable */
     pthread_mutex_destroy(&(*q)->lock_);
     pthread_cond_destroy(&(*q)->ready_);
-
+#endif
     /* free atomic queue */
     ADIOI_Free(*q);
 }
@@ -334,15 +334,15 @@ int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t q) {
  */
 ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
     struct ADIOI_Sync_req_env *env;
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
 	pthread_cond_wait(&q->ready_, &q->lock_);
-
+#endif
     env = list_entry(q->head_.next, struct ADIOI_Sync_req_env, head_);
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_unlock(&q->lock_);
-
+#endif
     return env->req_;
 }
 
@@ -351,15 +351,15 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
  */
 ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
     struct ADIOI_Sync_req_env *env;
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
 	pthread_cond_wait(&q->ready_, &q->lock_);
-
+#endif
     env = list_entry(q->head_.prev->prev, struct ADIOI_Sync_req_env, head_);
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_unlock(&q->lock_);
-
+#endif
     return env->req_;
 }
 
@@ -370,11 +370,11 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
  */
 void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
     struct ADIOI_Sync_req_env *env;
+#ifdef _USE_PTHREAD_MUTEX_
     int size;
-
     pthread_mutex_lock(&q->lock_);
-
     size = q->size_;
+#endif
 
     /* get empty envelop */
     env = list_entry(q->head_.prev, struct ADIOI_Sync_req_env, head_);
@@ -390,13 +390,14 @@ void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
     /* add new empty envelop to queue */
     list_add_tail(&(env->head_), &(q->head_));
 
-    /* increment size of the queue */
+    /* increment size of queue: this should be atomic */
     q->size_++;
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_unlock(&q->lock_);
 
     if (size == 0)
 	pthread_cond_signal(&q->ready_);
+#endif
 }
 
 /*
@@ -404,20 +405,21 @@ void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
  */
 void ADIOI_Atomic_queue_pop(ADIOI_Atomic_queue_t q) {
     struct ADIOI_Sync_req_env *env;
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
 	pthread_cond_wait(&q->ready_, &q->lock_);
-
+#endif
     /* remove front envelop */
     env = list_entry(q->head_.next, struct ADIOI_Sync_req_env, head_);
     list_del(&(env->head_));
     ADIOI_Free(env);
 
-    /* decrement size of queue */
+    /* decrement size of queue: this should be atomic */
     q->size_--;
-
+#ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_unlock(&q->lock_);
+#endif
 }
 
 /*

@@ -14,10 +14,16 @@
 
 void ADIOI_BEEGFS_Flush(ADIO_File fd, int *error_code)
 {
-    int err;
+    int err, myrank;
     static char myname[] = "ADIOI_BEEGFS_FLUSH";
 
-    if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHNONE)
+    MPI_Comm_rank(fd->comm, &myrank);
+    DEBEEG(myrank, __func__);
+
+    *error_code = MPI_SUCCESS;
+
+    if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHNONE ||
+	    !fd->thread_pool)
 	goto fn_flush;
 
     /* Flush all the requests in each thread */
@@ -25,6 +31,8 @@ void ADIOI_BEEGFS_Flush(ADIO_File fd, int *error_code)
 
     /* Wait for submitted requests to complete */
     ADIOI_BEEGFS_Sync_thread_wait(*(fd->thread_pool));
+
+    return;
 
 fn_flush:
     err = fsync(fd->fd_sys);

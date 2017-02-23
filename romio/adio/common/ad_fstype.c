@@ -873,7 +873,17 @@ void ADIO_ResolveFileType(MPI_Comm comm, const char *filename, int *fstype,
 	*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE, myname, __LINE__, MPI_ERR_IO, "**iofstypeunsupported", 0);
 	return;
 #else
-        *ops = &ADIO_BEEGFS_operations;
+	/* check beegfs api version */
+	if (beegfs_checkApiVersion(1, 1)) {
+	    if (deeper_cache_api_check_version(1, 0) != DEEPER_RETVAL_ERROR) {
+		*ops = &ADIO_BEEGFS_operations;
+	    } else {
+		*ops = &ADIO_BEEGFS_UFS_CACHE_operations;
+	    }
+	} else {
+	    file_system = ADIO_UFS;
+	    *ops = &ADIO_UFS_operations;
+	}
 #endif        
     }
 
