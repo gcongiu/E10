@@ -18,7 +18,6 @@ void ADIOI_BEEGFS_Flush(ADIO_File fd, int *error_code)
     static char myname[] = "ADIOI_BEEGFS_FLUSH";
 
     MPI_Comm_rank(fd->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
     *error_code = MPI_SUCCESS;
 

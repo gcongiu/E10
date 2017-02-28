@@ -375,7 +375,7 @@
 /* Define for ROMIO with TESTFS */
 #undef ROMIO_TESTFS
 
-/* Define for ROMIO with UFS */
+/* Define for UFS with BEEGFS */
 #undef ROMIO_UFS
 
 /* Define for ROMIO with XFS */

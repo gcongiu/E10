@@ -19,7 +19,6 @@ void ADIOI_BEEGFS_Close(ADIO_File fd, int *error_code) {
     int myrank;
 
     MPI_Comm_rank(fd->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
 #ifdef ADIOI_MPE_LOGGING
     MPE_Log_event(ADIOI_MPE_close_a, 0, NULL);
@@ -34,7 +33,7 @@ void ADIOI_BEEGFS_Close(ADIO_File fd, int *error_code) {
 	} else {
 	    err = close(fd->fd_sys);
 	}
-    } else if (fd->fns == &ADIO_BEEGFS_UFS_CACHE_operations) {
+    } else {
 	/* 
 	 * Whenever BeeGFS is used with the UFS 
 	 * UFS cache support built inside ROMIO.

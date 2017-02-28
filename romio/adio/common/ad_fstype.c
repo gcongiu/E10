@@ -33,7 +33,6 @@
 #ifdef HAVE_GPFS_H
 #include "gpfs.h"
 #endif
-
 /* Notes on detection process:
  *
  * There are three more "general" mechanisms that we use for detecting
@@ -80,6 +79,12 @@
 
 #if defined(ROMIO_GPFS) && !defined(GPFS_SUPER_MAGIC)
 # define GPFS_SUPER_MAGIC 0x47504653
+#endif
+
+#ifdef ROMIO_BEEGFS
+#include <stdbool.h>
+#include <beegfs/beegfs.h>
+#include <deeper/deeper_cache.h>
 #endif
 
 #ifdef ROMIO_HAVE_STRUCT_STATVFS_WITH_F_BASETYPE
@@ -875,14 +880,16 @@ void ADIO_ResolveFileType(MPI_Comm comm, const char *filename, int *fstype,
 #else
 	/* check beegfs api version */
 	if (beegfs_checkApiVersion(1, 1)) {
-	    if (deeper_cache_api_check_version(1, 0) != DEEPER_RETVAL_ERROR) {
+	    if (deeper_cache_check_api_version(1, 0) != DEEPER_RETVAL_ERROR) {
 		*ops = &ADIO_BEEGFS_operations;
+		//FPRINTF(stdout, "FSTYPE = BEEGFS\n");
 	    } else {
 		*ops = &ADIO_BEEGFS_UFS_CACHE_operations;
+		//FPRINTF(stdout, "FSTYPE = BEEGFS_UFS_CACHE\n");
 	    }
 	} else {
-	    file_system = ADIO_UFS;
-	    *ops = &ADIO_UFS_operations;
+	    *ops = &ADIO_BEEGFS_UFS_operations;
+	    //FPRINTF(stdout, "FSTYPE = BEEGFS_UFS\n");
 	}
 #endif        
     }

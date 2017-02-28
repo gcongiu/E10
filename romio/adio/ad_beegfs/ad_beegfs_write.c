@@ -32,7 +32,6 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
     int myrank;
 
     MPI_Comm_rank(fd->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
 #ifdef AGGREGATION_PROFILE
     MPE_Log_event (5036, 0, NULL);
@@ -56,7 +55,7 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
 	MPE_Log_event( ADIOI_MPE_write_a, 0, NULL );
 #endif
 	wr_count = len - bytes_xfered;
-	err = write(fh->fd_sys, p, wr_count);
+	err = pwrite(fh->fd_sys, p, wr_count, offset+bytes_xfered);
 	/* --BEGIN ERROR HANDLING-- */
 	if (err == -1) {
 	    *error_code = MPIO_Err_create_code(MPI_SUCCESS,

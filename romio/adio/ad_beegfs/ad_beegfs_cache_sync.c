@@ -20,7 +20,6 @@
  * ADIOI_BEEGFS_Sync_thread_init -
  */
 int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
-    int item, myrank;
     va_list args;
     *t = (struct ADIOI_Sync_thread *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_thread));
 
@@ -28,9 +27,6 @@ int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
     va_start(args, t);
     (*t)->fd_ = va_arg(args, ADIO_File);
     va_end(args);
-
-    MPI_Comm_rank((*t)->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
     /* create queues */
     ADIOI_Atomic_queue_init(&((*t)->sub_));
@@ -44,10 +40,6 @@ int ADIOI_BEEGFS_Sync_thread_init(ADIOI_Sync_thread_t *t, ...) {
  * ADIOI_BEEGFS_Sync_thread_fini -
  */
 int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
-    int myrank;
-    MPI_Comm_rank((*t)->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
-
     ADIOI_Atomic_queue_fini(&((*t)->sub_));
     ADIOI_Atomic_queue_fini(&((*t)->pen_));
     ADIOI_Atomic_queue_fini(&((*t)->wait_));
@@ -61,10 +53,6 @@ int ADIOI_BEEGFS_Sync_thread_fini(ADIOI_Sync_thread_t *t) {
  * ADIOI_BEEGFS_Sync_thread_enqueue -
  */
 void ADIOI_BEEGFS_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r) {
-    int myrank;
-    MPI_Comm_rank(t->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
-
     ADIOI_Sync_thread_enqueue(t, r);
 }
 
@@ -72,10 +60,6 @@ void ADIOI_BEEGFS_Sync_thread_enqueue(ADIOI_Sync_thread_t t, ADIOI_Sync_req_t r)
  * ADIOI_BEEGFS_Sync_thread_flush -
  */
 void ADIOI_BEEGFS_Sync_thread_flush(ADIOI_Sync_thread_t t) {
-    int myrank;
-    MPI_Comm_rank(t->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
-
     ADIOI_Sync_req_t r;
 
     while (!ADIOI_Atomic_queue_empty(t->pen_)) {
@@ -93,14 +77,10 @@ void ADIOI_BEEGFS_Sync_thread_flush(ADIOI_Sync_thread_t t) {
  * ADIOI_BEEGFS_Sync_thread_wait -
  */
 void ADIOI_BEEGFS_Sync_thread_wait(ADIOI_Sync_thread_t t) {
-    int myrank;
-    MPI_Comm_rank(t->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
-
     ADIOI_Sync_thread_wait(t);
 }
 
-static MPIX_Grequest_class ADIOI_BEEGFS_greq_class = 0;
+static MPIX_Grequest_class ADIOI_BEEGFS_greq_class = 1;
 
 static int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status);
 static int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states, double timeout, MPI_Status *status);
@@ -120,16 +100,12 @@ struct callback {
 int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
     ADIOI_Atomic_queue_t q = t->sub_;
     ADIOI_Sync_req_t r;
-    int retval, count, fflags, error_code;
+    int retval, count, fflags, error_code, i;
     ADIO_Offset offset, len;
     MPI_Count datatype_size;
     MPI_Datatype datatype;
     ADIO_Request *req;
     char myname[] = "ADIOI_BEEGFS_SYNC_THREAD_START";
-    int myrank;
-
-    MPI_Comm_rank(t->fd_->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
     r = ADIOI_Atomic_queue_front(q);
     ADIOI_Atomic_queue_pop(q);
@@ -142,21 +118,24 @@ int ADIOI_BEEGFS_Sync_thread_start(ADIOI_Sync_thread_t t) {
 
     retval = deeper_cache_flush_range(t->fd_->filename, (off_t)offset, (size_t)len, fflags);
 
-    if (retval == DEEPER_RETVAL_SUCCESS && ADIOI_BEEGFS_greq_class == 0) {
-        MPIX_Grequest_class_create(ADIOI_BEEGFS_Sync_req_query,
-                                   ADIOI_BEEGFS_Sync_req_free,
-                                   MPIU_Greq_cancel_fn,
-                                   ADIOI_BEEGFS_Sync_req_poll,
-                                   ADIOI_BEEGFS_Sync_req_wait,
-                                   &ADIOI_BEEGFS_greq_class);
-    }
-    else {
-        /* --BEGIN ERROR HANDLING-- */
-        return MPIO_Err_create_code(MPI_SUCCESS,
-                                    MPIR_ERR_RECOVERABLE,
-                                    "ADIOI_BEEGFS_Cache_sync_req",
-                                    __LINE__, MPI_ERR_IO, "**io %s",
-                                    strerror(errno));
+    //int myrank;
+    //MPI_Comm_rank(t->fd_->comm, &myrank);
+    //FPRINTF(stdout, "%3d: off = %9lli ; len = %llu\n", myrank, offset, len);
+
+    if (retval == DEEPER_RETVAL_SUCCESS && ADIOI_BEEGFS_greq_class == 1) {
+	MPIX_Grequest_class_create(ADIOI_BEEGFS_Sync_req_query,
+		                   ADIOI_BEEGFS_Sync_req_free,
+		                   MPIU_Greq_cancel_fn,
+			           ADIOI_BEEGFS_Sync_req_poll,
+			           ADIOI_BEEGFS_Sync_req_wait,
+				   &ADIOI_BEEGFS_greq_class);
+    } else {
+	/* --BEGIN ERROR HANDLING-- */
+	return MPIO_Err_create_code(MPI_SUCCESS,
+		                    MPIR_ERR_RECOVERABLE,
+		                    "ADIOI_BEEGFS_Cache_sync_req",
+			            __LINE__, MPI_ERR_IO, "**io %s",
+			            strerror(errno));
         /* --END ERROR HANDLING-- */
     }
 
@@ -184,16 +163,15 @@ int ADIOI_BEEGFS_Sync_req_poll(void *extra_state, MPI_Status *status) {
     MPI_Aint lb, extent;
     ADIO_Offset len;
     ADIO_Request *req;
-    int myrank;
-
-    MPI_Comm_rank(fd->comm, &myrank);
-    DEBEEG(myrank, __func__);
-
 
     ADIOI_Sync_req_get_key(r, ADIOI_SYNC_ALL, &offset,
 	    &datatype, &count, &req, &error_code, &cache_flush_flags);
 
     int retval = deeper_cache_flush_wait(filename, cache_flush_flags);
+    
+    //int myrank;
+    //MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    //FPRINTF(stdout, "%d: off = %lli ; count = %d\n", myrank, offset, count);
 
     MPI_Type_get_extent(datatype, &lb, &extent);
     len = (ADIO_Offset)extent * (ADIO_Offset)count;
@@ -230,7 +208,7 @@ fn_exit_error:
  * ADIOI_BEEGFS_Sync_req_wait -
  */
 int ADIOI_BEEGFS_Sync_req_wait(int count, void **array_of_states, double timeout, MPI_Status *status) {
-    return MPI_SUCCESS;
+    return ADIOI_BEEGFS_Sync_req_poll(*array_of_states, status); 
 }
 
 /*

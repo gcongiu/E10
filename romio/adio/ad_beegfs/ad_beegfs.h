@@ -26,6 +26,9 @@
 #define aiocb aiocb64
 #endif
 
+//#define DEBEEG(myrank, func_name) \
+//	FPRINTF(stderr, "[%s:%d]\n", func_name, myrank);
+
 // this is needed to use SSD
 // cache without native BeeGFS
 // support

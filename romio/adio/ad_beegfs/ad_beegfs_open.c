@@ -17,7 +17,6 @@ void ADIOI_BEEGFS_Open(ADIO_File fd, int *error_code)
     int myrank; 
     
     MPI_Comm_rank(fd->comm, &myrank);
-    DEBEEG(myrank, __func__);
 
     if (fd->perm == ADIO_PERM_NULL) {
 	old_mask = umask( 022 );
@@ -54,7 +53,7 @@ void ADIOI_BEEGFS_Open(ADIO_File fd, int *error_code)
 	    fd->thread_pool = (ADIOI_Sync_thread_t *)ADIOI_Malloc(sizeof(ADIOI_Sync_thread_t));
 	    ADIOI_BEEGFS_Sync_thread_init(&fd->thread_pool[0], fd);
 	}
-    } else if (fd->fns == &ADIO_BEEGFS_UFS_CACHE_operations) {
+    } else {
 	fd->fd_sys = open(fd->filename, amode, perm);
     }
 #ifdef ADIOI_MPE_LOGGING

@@ -19,18 +19,9 @@ void ADIOI_BEEGFS_OpenColl(ADIO_File fd,
 {
     int orig_amode_excl, orig_amode_wronly, max_error_code;
     int ret = DEEPER_RETVAL_SUCCESS;
-    //int nnodes = 0, found;
     char *pathname = NULL, *dir = NULL;
     char myname[] = "ADIOI_BEEGFS_OPENCOLL";
-    //ADIO_cb_name_array array = NULL;
     MPI_Comm tmp_comm;
-
-    /* get nodes name array */
-    //MPI_Attr_get(fd->comm, ADIOI_cb_config_list_keyval, (void*)&array, &found);
-    //if (found) {
-    //nnodes = array->namect;
-    //}
-    DEBEEG(rank, __func__);
 
     orig_amode_excl = access_mode;
 
@@ -71,8 +62,7 @@ fn_open:
                 /* only the root process creates the file using
 		 * deeper_cache_open() call ... */
 		(*(fd->fns->ADIOI_xxx_Open))(fd, error_code);
-            }
-            else {
+            } else if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
                 /* -BEGIN ERROR HANDLING- */
                 FPRINTF(stderr, "[rank:%d]Error while prefetching %s: %s\n",
 			rank,
@@ -173,11 +163,9 @@ fn_open:
 	}
 
         /* set the cache open flags for the file in the cache FS */
-        fd->cache_oflags = DEEPER_OPEN_NONE;
-        //if (fd->hints->e10_cache_flush_flag == ADIOI_HINT_FLUSHONCLOSE) {
-        //    fd->cache_oflags  = DEEPER_OPEN_FLUSHONCLOSE;
-        //    fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
-        //}
+        fd->cache_oflags  = DEEPER_OPEN_NONE;
+	fd->cache_oflags |= DEEPER_OPEN_FLUSHONCLOSE;
+	fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
 
         if (fd->hints->e10_cache_discard_flag == ADIOI_HINT_ENABLE)
             fd->cache_oflags |= DEEPER_OPEN_DISCARD;
