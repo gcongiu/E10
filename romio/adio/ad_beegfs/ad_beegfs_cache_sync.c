@@ -91,6 +91,21 @@ void ADIOI_BEEGFS_Sync_thread_wait(ADIOI_Sync_thread_t t) {
     /* empty wait queue and free MPI_Requests */
     while (!ADIOI_Atomic_queue_empty(t->wait_)) {
 	wait = ADIOI_Atomic_queue_front(t->wait_);
+	if (t->fd_->hints->e10_cache_coherent == ADIOI_HINT_ENABLE) {
+	    int count;
+	    ADIO_Offset offset, len;
+	    MPI_Datatype datatype;
+	    MPI_Count datatype_size;
+
+	    ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_OFFSET, &offset);
+	    ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_DATATYPE, &datatype);
+	    ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_COUNT, &count);  
+
+	    MPI_Type_size_x(datatype, &datatype_size);
+	    len = (ADIO_Offset)datatype_size * (ADIO_Offset)count;
+
+	    ADIOI_UNLOCK(t->fd_, offset, SEEK_SET, len);
+	}
 	ADIOI_Sync_req_get_key(wait, ADIOI_SYNC_REQ, &req);
 	ADIOI_Atomic_queue_pop(t->wait_);
 	ADIOI_Sync_req_fini(&wait);
