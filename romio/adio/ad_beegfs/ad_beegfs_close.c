@@ -25,10 +25,7 @@ void ADIOI_BEEGFS_Close(ADIO_File fd, int *error_code) {
 #endif
     /* select the appropriate close mechanism */
     if (fd->fns == &ADIO_BEEGFS_operations) {
-        if (fd->thread_pool) {
-	    (*(fd->fns->ADIOI_xxx_Flush))(fd, error_code);
-	    ADIOI_BEEGFS_Sync_thread_fini(&fd->thread_pool[0]);
-	    ADIOI_Free(fd->thread_pool);
+        if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
 	    err = deeper_cache_close(fd->fd_sys);
 	} else {
 	    err = close(fd->fd_sys);

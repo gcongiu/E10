@@ -55,6 +55,15 @@ void ADIO_Close(ADIO_File fd, int *error_code)
 	ADIOI_Free(fd->cache_fd->filename);
 	MPIO_File_free(&(fd->cache_fd));
 	fd->cache_fd = ADIO_FILE_NULL;
+    } else if (fd->thread_pool) {
+	/* No cache_fd for BeeGFS, use thread_pool */
+	(*(fd->fns->ADIOI_xxx_Flush))(fd, error_code);
+
+	/* Fini thread data structure */
+	ADIOI_BEEGFS_Sync_thread_fini(&fd->thread_pool[0]);
+
+	/* Free thread data structure */
+	ADIOI_Free(fd->thread_pool);
     }
 
     if (fd->hints->deferred_open && fd->is_agg) {

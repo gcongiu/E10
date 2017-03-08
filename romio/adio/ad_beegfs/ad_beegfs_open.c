@@ -48,11 +48,6 @@ void ADIOI_BEEGFS_Open(ADIO_File fd, int *error_code)
 
 	if (fd->fd_sys == DEEPER_RETVAL_ERROR)
 	    FPRINTF(stderr, "[rank:%d]Error: %s\n", myrank, strerror(errno));
-
-	if (fd->fd_sys != DEEPER_RETVAL_ERROR && fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-	    fd->thread_pool = (ADIOI_Sync_thread_t *)ADIOI_Malloc(sizeof(ADIOI_Sync_thread_t));
-	    ADIOI_BEEGFS_Sync_thread_init(&fd->thread_pool[0], fd);
-	}
     } else {
 	fd->fd_sys = open(fd->filename, amode, perm);
     }

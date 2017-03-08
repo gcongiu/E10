@@ -44,11 +44,10 @@ fn_open:
 
 	    /* Prefetch the file's parent dir in the e10_cache FS */
             if(fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-		ret = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
-		//ret |= deeper_cache_prefetch_wait(dir, DEEPER_PREFETCH_NONE);
+		ret = deeper_cache_mkdir(dir, S_IRWXU);
 
-                /* Flush the file in the e10_cache FS to the global FS */
-                fd->cache_oflags = DEEPER_OPEN_FLUSHONCLOSE | DEEPER_OPEN_FLUSHWAIT;
+                fd->cache_oflags  = DEEPER_OPEN_FLUSHONCLOSE;
+		fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
 	    } else {
 		ret = DEEPER_RETVAL_SUCCESS;
 	    }
@@ -64,7 +63,7 @@ fn_open:
 		(*(fd->fns->ADIOI_xxx_Open))(fd, error_code);
             } else if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
                 /* -BEGIN ERROR HANDLING- */
-                FPRINTF(stderr, "[rank:%d]Error while prefetching %s: %s\n",
+                FPRINTF(stderr, "[rank:%d]Error while creating directory %s: %s\n",
 			rank,
 			dir,
                         strerror(errno));
@@ -82,8 +81,10 @@ fn_open:
 	    fd->comm = tmp_comm;
 
 	    /* if no error, close the file and reopen normally below */
-	    if(*error_code == MPI_SUCCESS)
+	    if(*error_code == MPI_SUCCESS || *error_code == MPI_ERR_FILE_EXISTS) {
+		/* close file and flush it to global file system */
 		(*(fd->fns->ADIOI_xxx_Close))(fd, error_code);
+	    }
 
 	    /* broadcast open result */
 	    MPI_Bcast(error_code, 1, MPI_INT, fd->hints->ranklist[0], fd->comm);
@@ -113,6 +114,14 @@ fn_open:
     fd->blksize = 1024*1024*4; /* this large default value should be good for
 				 most file systems.  any ROMIO driver is free
 				 to stat the file and find an optimial value */
+
+    if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
+        /* allocate space for sync thread data structure */
+        fd->thread_pool = (ADIOI_Sync_thread_t *)ADIOI_Malloc(sizeof(ADIOI_Sync_thread_t));
+    
+    	/* init sync thread data structure */ 
+        ADIOI_BEEGFS_Sync_thread_init(&fd->thread_pool[0], fd);
+    }
 
     /* if we are doing deferred open, non-aggregators should return now */
     if (fd->hints->deferred_open) {
@@ -152,20 +161,27 @@ fn_open:
     /* Now everyone opens the file created before */
     if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
         /* Prefetch the file in the cache FS. Only one process per node can prefetch */
-	ret  = deeper_cache_prefetch(dir, DEEPER_PREFETCH_SUBDIRS | DEEPER_PREFETCH_WAIT);
-        //ret |= deeper_cache_prefetch_wait(dir, DEEPER_PREFETCH_NONE);
+	ret = deeper_cache_mkdir(dir, S_IRWXU);
 
         if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
-            FPRINTF(stderr, "[rank:%d]%s prefetching error: %s\n",
+            FPRINTF(stderr, "[rank:%d]%s error: %s\n",
 		    rank,
-                    fd->filename,
+                    dir,
                     strerror(errno));
 	}
 
+	ret  = deeper_cache_prefetch(fd->filename, DEEPER_PREFETCH_NONE);
+	ret |= deeper_cache_prefetch_wait(fd->filename, DEEPER_PREFETCH_NONE);
+
         /* set the cache open flags for the file in the cache FS */
-        fd->cache_oflags  = DEEPER_OPEN_NONE;
-	fd->cache_oflags |= DEEPER_OPEN_FLUSHONCLOSE;
-	fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
+	if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
+	    FPRINTF(stderr, "[rank:%d]%s error: %s\n",
+		    rank,
+		    dir,
+		    strerror(errno));
+	}
+
+	fd->cache_oflags = DEEPER_OPEN_NONE;
 
         if (fd->hints->e10_cache_discard_flag == ADIOI_HINT_ENABLE)
             fd->cache_oflags |= DEEPER_OPEN_DISCARD;

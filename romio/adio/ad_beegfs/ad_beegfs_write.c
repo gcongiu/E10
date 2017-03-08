@@ -85,7 +85,7 @@ void ADIOI_BEEGFS_WriteContig(ADIO_File fd, const void *buf, int count,
 	    fd->hints->e10_cache_flush_flag != ADIOI_HINT_FLUSHNONE) {
 
 	ADIOI_Sync_req_t sub;
-	int command = ADIOI_THREAD_SYNC;
+	int command = ADIOI_THREAD_SYNC; // not checked in BeeGFS
 	int flush_flags = DEEPER_FLUSH_NONE;
 	ADIO_Request *r = (ADIO_Request *)ADIOI_Malloc(sizeof(ADIO_Request));
 	*r = MPI_REQUEST_NULL;
