@@ -41,7 +41,7 @@ static int ADIOI_BEEGFS_Mkdir(const char *name, mode_t perm) {
 	*ptr = '\0';
 
 	/* create the nth dir in the pathname */
-	if (deeper_cache_mkdir(string, perm)) {
+	if ((ret = deeper_cache_mkdir(string, perm))) {
 	    FPRINTF(stderr, "%s error: %s\n", string, strerror(errno));
 	}
 	
@@ -52,7 +52,7 @@ static int ADIOI_BEEGFS_Mkdir(const char *name, mode_t perm) {
 
     ADIOI_Free(string);
 
-    return DEEPER_RETVAL_SUCCESS;    
+    return ret;    
 }
 
 /* BeeGFS version of a "collective open" */
