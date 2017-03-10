@@ -11,6 +11,50 @@
 #include "adio_extern.h"
 #include "adio_cb_config_list.h"
 
+/*
+ * ADIOI_BEEGFS_Mkdir - creates recursively all the directories in name
+ *
+ * This subroutine takes a pessimistic approach and tries 
+ * to create all the directories in the pathname name using
+ * deeper_cache_mkdir()
+ */
+static int ADIOI_BEEGFS_Mkdir(const char *name, mode_t perm) {
+    int i = 1, len, ret = DEEPER_RETVAL_SUCCESS;
+
+    if (name == NULL) {
+	errno = ENOENT;
+	return DEEPER_RETVAL_ERROR;
+    }
+
+    char *string = (char *)ADIOI_Malloc(strlen(name)+1);
+    char *ptr = string;
+    len = strlen(name);
+
+    /* accounts for first '/' */
+    while (i < len && (!ret || errno == EEXIST)) {
+	*(ptr++) = '/';
+	
+	/* add path components to string */
+	while (name[i] != '\0' && name[i] != '/')
+	    *(ptr++) = name[i++];
+
+	*ptr = '\0';
+
+	/* create the nth dir in the pathname */
+	if (deeper_cache_mkdir(string, perm)) {
+	    FPRINTF(stderr, "%s error: %s\n", string, strerror(errno));
+	}
+	
+	/* skip all the '/' in name */
+	while (name[i] == '/')
+	    i++;
+    }
+
+    ADIOI_Free(string);
+
+    return DEEPER_RETVAL_SUCCESS;    
+}
+
 /* BeeGFS version of a "collective open" */
 void ADIOI_BEEGFS_OpenColl(ADIO_File fd,
 			   int rank,
@@ -44,7 +88,8 @@ fn_open:
 
 	    /* Prefetch the file's parent dir in the e10_cache FS */
             if(fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-		ret = deeper_cache_mkdir(dir, S_IRWXU);
+		//ret = deeper_cache_mkdir(dir, S_IRWXU);
+		ret = ADIOI_BEEGFS_Mkdir(dir, S_IRWXU);
 
                 fd->cache_oflags  = DEEPER_OPEN_FLUSHONCLOSE;
 		fd->cache_oflags |= DEEPER_OPEN_FLUSHWAIT;
@@ -160,9 +205,11 @@ fn_open:
 
     /* Now everyone opens the file created before */
     if (fd->hints->e10_cache == ADIOI_HINT_ENABLE) {
-        /* Prefetch the file in the cache FS. Only one process per node can prefetch */
-	ret = deeper_cache_mkdir(dir, S_IRWXU);
+        /* create directory in the cache file system */
+	//ret = deeper_cache_mkdir(dir, S_IRWXU);
+	ret = ADIOI_BEEGFS_Mkdir(dir, S_IRWXU);
 
+	/* check mkdir return val */
         if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
             FPRINTF(stderr, "[rank:%d]%s error: %s\n",
 		    rank,
@@ -170,17 +217,21 @@ fn_open:
                     strerror(errno));
 	}
 
+	/* multiple calls on the same node will return EALREADY */
 	ret  = deeper_cache_prefetch(fd->filename, DEEPER_PREFETCH_NONE);
-	ret |= deeper_cache_prefetch_wait(fd->filename, DEEPER_PREFETCH_NONE);
 
-        /* set the cache open flags for the file in the cache FS */
-	if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST) {
+	/* check prefetch return val. Please note that nothing should go wrong here */
+	if (ret == DEEPER_RETVAL_ERROR && errno != EEXIST && errno != EALREADY) {
 	    FPRINTF(stderr, "[rank:%d]%s error: %s\n",
 		    rank,
 		    dir,
 		    strerror(errno));
 	}
 
+	/* wait here for prefetch to finish */
+	ret = deeper_cache_prefetch_wait(fd->filename, DEEPER_PREFETCH_NONE);
+
+        /* set the cache open flags for the file in the cache FS */
 	fd->cache_oflags = DEEPER_OPEN_NONE;
 
         if (fd->hints->e10_cache_discard_flag == ADIOI_HINT_ENABLE)
