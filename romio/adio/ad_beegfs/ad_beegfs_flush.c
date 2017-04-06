@@ -34,17 +34,19 @@ void ADIOI_BEEGFS_Flush(ADIO_File fd, int *error_code)
     return;
 
 fn_flush:
-    err = fsync(fd->fd_sys);
+    if (fd->is_open > 0) {
+	err = fsync(fd->fd_sys);
 
-    /* --BEGIN ERROR HANDLING-- */
-    if (err == -1) {
-	*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
-					   myname, __LINE__, MPI_ERR_IO,
-					   "**io",
-					   "**io %s", strerror(errno));
-	return;
+	/* --BEGIN ERROR HANDLING-- */
+	if (err == -1) {
+	    *error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
+					       myname, __LINE__, MPI_ERR_IO,
+					       "**io",
+					       "**io %s", strerror(errno));
+	    return;
+	}
+	/* --END ERROR HANDLING-- */
     }
-    /* --END ERROR HANDLING-- */
 
     *error_code = MPI_SUCCESS;
 }

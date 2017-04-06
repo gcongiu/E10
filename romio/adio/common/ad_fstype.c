@@ -878,18 +878,21 @@ void ADIO_ResolveFileType(MPI_Comm comm, const char *filename, int *fstype,
 	*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE, myname, __LINE__, MPI_ERR_IO, "**iofstypeunsupported", 0);
 	return;
 #else
+	int myrank;
+	MPI_Comm_rank(comm, &myrank);
+
 	/* check beegfs api version */
 	if (beegfs_checkApiVersion(1, 1)) {
 	    if (deeper_cache_check_api_version(1, 0) != DEEPER_RETVAL_ERROR) {
 		*ops = &ADIO_BEEGFS_operations;
-		//FPRINTF(stdout, "FSTYPE = BEEGFS\n");
+		if (!myrank) FPRINTF(stdout, "ADIO Driver : Native BeeGFS driver for ROMIO\n");
 	    } else {
 		*ops = &ADIO_BEEGFS_UFS_CACHE_operations;
-		//FPRINTF(stdout, "FSTYPE = BEEGFS_UFS_CACHE\n");
+		if (!myrank) FPRINTF(stdout, "ADIO Driver : BeeGFS driver using UFS caching\n");
 	    }
 	} else {
 	    *ops = &ADIO_BEEGFS_UFS_operations;
-	    //FPRINTF(stdout, "FSTYPE = BEEGFS_UFS\n");
+	    if (!myrank) FPRINTF(stdout, "BeeGFS driver using UFS support\n");
 	}
 #endif        
     }
