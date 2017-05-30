@@ -38,7 +38,7 @@ void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *);
 int ADIOI_Atomic_queue_empty(ADIOI_Atomic_queue_t);
 int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t);
 ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t);
-ADIOI_Sync_req_t ADIOI_Back_queue_back(ADIOI_Atomic_queue_t);
+ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t);
 void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t, ADIOI_Sync_req_t);
 void ADIOI_Atomic_queue_pop(ADIOI_Atomic_queue_t);
 #endif
