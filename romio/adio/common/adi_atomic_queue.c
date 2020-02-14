@@ -21,7 +21,8 @@
  *
  * NOTE: pass fields as they are defined in adi_atomic_queue.h
  */
-int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
+int ADIOI_Sync_req_init(ADIOI_Sync_req_t * r, ...)
+{
     int type, ret = MPI_SUCCESS;
     ADIO_Offset offset;
     MPI_Datatype datatype;
@@ -29,41 +30,30 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
     ADIO_Request *req;
     va_list args;
 
-    *r = (struct ADIOI_Sync_req *)ADIOI_Malloc(sizeof(struct ADIOI_Sync_req));
+    *r = (struct ADIOI_Sync_req *) ADIOI_Malloc(sizeof(struct ADIOI_Sync_req));
 
     va_start(args, r);
     type = va_arg(args, int);
 
     switch (type) {
-	case ADIOI_THREAD_SYNC: {
-	    offset = va_arg(args, ADIO_Offset);
-	    datatype = va_arg(args, MPI_Datatype);
-	    count = va_arg(args, int);
-	    req = va_arg(args, ADIO_Request*);
-	    fflags = va_arg(args, int);
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
-		    type,
-		    offset,
-		    datatype,
-		    count,
-		    req,
-		    MPI_SUCCESS,
-		    fflags);
-	    break;
-	}
-	case ADIOI_THREAD_SHUTDOWN: {
-	    ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
-		    type,
-		    0,
-		    MPI_DATATYPE_NULL,
-		    0,
-		    MPI_REQUEST_NULL,
-		    MPI_SUCCESS,
-		    0);
-	    break;
-	}
-	default:
-	    ret = ADIOI_SYNC_REQ_ERR;
+        case ADIOI_THREAD_SYNC:{
+                offset = va_arg(args, ADIO_Offset);
+                datatype = va_arg(args, MPI_Datatype);
+                count = va_arg(args, int);
+                req = va_arg(args, ADIO_Request *);
+                fflags = va_arg(args, int);
+                ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
+                                       type, offset, datatype, count, req, MPI_SUCCESS, fflags);
+                break;
+            }
+        case ADIOI_THREAD_SHUTDOWN:{
+                ADIOI_Sync_req_set_key(*r, ADIOI_SYNC_ALL,
+                                       type,
+                                       0, MPI_DATATYPE_NULL, 0, MPI_REQUEST_NULL, MPI_SUCCESS, 0);
+                break;
+            }
+        default:
+            ret = ADIOI_SYNC_REQ_ERR;
     }
 
     va_end(args);
@@ -74,15 +64,17 @@ int ADIOI_Sync_req_init(ADIOI_Sync_req_t *r, ...) {
 /*
  * ADIOI_Sync_req_init_from - initialise synchronisation request using existing one
  */
-int ADIOI_Sync_req_init_from(ADIOI_Sync_req_t *new, ADIOI_Sync_req_t old) {
+int ADIOI_Sync_req_init_from(ADIOI_Sync_req_t * new, ADIOI_Sync_req_t old)
+{
     return ADIOI_Sync_req_init(new, old->type_, old->off_, old->datatype_,
-	    old->count_, old->req_, old->fflags_);
+                               old->count_, old->req_, old->fflags_);
 }
 
 /*
  * ADIOI_Sync_req_fini - finilise synchronisation request
  */
-int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r) {
+int ADIOI_Sync_req_fini(ADIOI_Sync_req_t * r)
+{
     ADIOI_Free(*r);
     return MPI_SUCCESS;
 }
@@ -95,7 +87,8 @@ int ADIOI_Sync_req_fini(ADIOI_Sync_req_t *r) {
  * OUTPUT 1..N - value(s)
  *
  */
-int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
+int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...)
+{
     int *error_code, *count, *fflags, ret = MPI_SUCCESS;
     int key, *type;
     ADIO_Offset *off;
@@ -107,93 +100,93 @@ int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
     key = va_arg(args, int);
 
     switch (key) {
-	case ADIOI_SYNC_TYPE: {
-	    type = va_arg(args, int *);
-	    *type = r->type_;
-	    break;
-	}
-	case ADIOI_SYNC_OFFSET: {
-	    if (r->type_ == ADIOI_THREAD_SYNC) {
-		off = va_arg(args, ADIO_Offset *);
-		*off = r->off_;
-	    } else {
-		off = NULL;
-		ret = -1;
-		errno = EINVAL;
-	    }
-	    break;
-	}
-	case ADIOI_SYNC_DATATYPE: {
-	    if (r->type_ == ADIOI_THREAD_SYNC) {
-		datatype = va_arg(args, MPI_Datatype *);
-		*datatype = r->datatype_;
-	    } else {
-		datatype = NULL;
-		ret = -1;
-		errno = EINVAL;
-	    }
-	    break;
-	}
-	case ADIOI_SYNC_COUNT: {
-	    if (r->type_ == ADIOI_THREAD_SYNC) {
-		count = va_arg(args, int *);
-		*count = r->count_;
-	    } else {
-		count = NULL;
-		ret = -1;
-		errno = EINVAL;
-	    }
-	    break;
-	}
-	case ADIOI_SYNC_REQ: {
-	    req = va_arg(args, ADIO_Request **);
-	    *req = r->req_;
-	    break;
-	}
-	case ADIOI_SYNC_ERR_CODE: {
-	    error_code = va_arg(args, int *);
-	    *error_code = r->error_code_;
-	    break;
-	}
-	case ADIOI_SYNC_FFLAGS: {
-	    fflags = va_arg(args, int *);
-	    *fflags = r->fflags_;
-	    break;
-	}
-	case ADIOI_SYNC_ALL: {
-	    if (r->type_ == ADIOI_THREAD_SYNC) {
-		off = va_arg(args, ADIO_Offset *);
-		datatype = va_arg(args, MPI_Datatype *);
-		count = va_arg(args, int *);
-		req = va_arg(args, ADIO_Request **);
-		error_code = va_arg(args, int *);
-		fflags = va_arg(args, int *);
+        case ADIOI_SYNC_TYPE:{
+                type = va_arg(args, int *);
+                *type = r->type_;
+                break;
+            }
+        case ADIOI_SYNC_OFFSET:{
+                if (r->type_ == ADIOI_THREAD_SYNC) {
+                    off = va_arg(args, ADIO_Offset *);
+                    *off = r->off_;
+                } else {
+                    off = NULL;
+                    ret = -1;
+                    errno = EINVAL;
+                }
+                break;
+            }
+        case ADIOI_SYNC_DATATYPE:{
+                if (r->type_ == ADIOI_THREAD_SYNC) {
+                    datatype = va_arg(args, MPI_Datatype *);
+                    *datatype = r->datatype_;
+                } else {
+                    datatype = NULL;
+                    ret = -1;
+                    errno = EINVAL;
+                }
+                break;
+            }
+        case ADIOI_SYNC_COUNT:{
+                if (r->type_ == ADIOI_THREAD_SYNC) {
+                    count = va_arg(args, int *);
+                    *count = r->count_;
+                } else {
+                    count = NULL;
+                    ret = -1;
+                    errno = EINVAL;
+                }
+                break;
+            }
+        case ADIOI_SYNC_REQ:{
+                req = va_arg(args, ADIO_Request **);
+                *req = r->req_;
+                break;
+            }
+        case ADIOI_SYNC_ERR_CODE:{
+                error_code = va_arg(args, int *);
+                *error_code = r->error_code_;
+                break;
+            }
+        case ADIOI_SYNC_FFLAGS:{
+                fflags = va_arg(args, int *);
+                *fflags = r->fflags_;
+                break;
+            }
+        case ADIOI_SYNC_ALL:{
+                if (r->type_ == ADIOI_THREAD_SYNC) {
+                    off = va_arg(args, ADIO_Offset *);
+                    datatype = va_arg(args, MPI_Datatype *);
+                    count = va_arg(args, int *);
+                    req = va_arg(args, ADIO_Request **);
+                    error_code = va_arg(args, int *);
+                    fflags = va_arg(args, int *);
 
-		*off = r->off_;
-		*datatype = r->datatype_;
-		*count = r->count_;
-		*req = r->req_;
-		*error_code = r->error_code_;
-		*fflags = r->fflags_;
-	    } else {
-		off = NULL;
-		datatype = NULL;
-		count = NULL;
-		req = NULL;
-		error_code = NULL;
-		fflags = NULL;
+                    *off = r->off_;
+                    *datatype = r->datatype_;
+                    *count = r->count_;
+                    *req = r->req_;
+                    *error_code = r->error_code_;
+                    *fflags = r->fflags_;
+                } else {
+                    off = NULL;
+                    datatype = NULL;
+                    count = NULL;
+                    req = NULL;
+                    error_code = NULL;
+                    fflags = NULL;
 
-		ret = -1;
-		errno = EINVAL;
-	    }
-	    break;
-	}
-	default: {
-	    ret = -1;
-	    errno = EINVAL;
-	}
+                    ret = -1;
+                    errno = EINVAL;
+                }
+                break;
+            }
+        default:{
+                ret = -1;
+                errno = EINVAL;
+            }
     }
-	
+
     return ret;
 }
 
@@ -205,7 +198,8 @@ int ADIOI_Sync_req_get_key(ADIOI_Sync_req_t r, ...) {
  * INPUT 3..N - value(s)
  *
  */
-int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
+int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...)
+{
     int key, ret = MPI_SUCCESS;
     va_list args;
 
@@ -213,45 +207,45 @@ int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
     key = va_arg(args, int);
 
     switch (key) {
-	case ADIOI_SYNC_TYPE: {
-	    r->type_ = va_arg(args, int);
-	}
-	case ADIOI_SYNC_OFFSET: {
-	    r->off_ = va_arg(args, ADIO_Offset);
-	    break;
-	}
-	case ADIOI_SYNC_DATATYPE: {
-	    r->datatype_ = va_arg(args, MPI_Datatype);
-	    break;
-	}
-	case ADIOI_SYNC_COUNT: {
-	    r->count_ = va_arg(args, int);
-	    break;
-	}
-	case ADIOI_SYNC_REQ: {
-	    r->req_ = va_arg(args, ADIO_Request *);
-	    break;
-	}
-	case ADIOI_SYNC_ERR_CODE: {
-	    r->error_code_ = va_arg(args, int);
-	    break;
-	}
-	case ADIOI_SYNC_FFLAGS: {
-	    r->fflags_ = va_arg(args, int);
-	    break;
-	}
-	case ADIOI_SYNC_ALL: {
-	    r->type_ = va_arg(args, int);
-	    r->off_ = va_arg(args, ADIO_Offset);
-	    r->datatype_ = va_arg(args, MPI_Datatype);
-	    r->count_ = va_arg(args, int);
-	    r->req_ = va_arg(args, ADIO_Request *);
-	    r->error_code_ = va_arg(args, int);
-	    r->fflags_ = va_arg(args, int);
-	    break;
-	}
-	default:
-	    ret = ADIOI_SYNC_REQ_ERR;
+        case ADIOI_SYNC_TYPE:{
+                r->type_ = va_arg(args, int);
+            }
+        case ADIOI_SYNC_OFFSET:{
+                r->off_ = va_arg(args, ADIO_Offset);
+                break;
+            }
+        case ADIOI_SYNC_DATATYPE:{
+                r->datatype_ = va_arg(args, MPI_Datatype);
+                break;
+            }
+        case ADIOI_SYNC_COUNT:{
+                r->count_ = va_arg(args, int);
+                break;
+            }
+        case ADIOI_SYNC_REQ:{
+                r->req_ = va_arg(args, ADIO_Request *);
+                break;
+            }
+        case ADIOI_SYNC_ERR_CODE:{
+                r->error_code_ = va_arg(args, int);
+                break;
+            }
+        case ADIOI_SYNC_FFLAGS:{
+                r->fflags_ = va_arg(args, int);
+                break;
+            }
+        case ADIOI_SYNC_ALL:{
+                r->type_ = va_arg(args, int);
+                r->off_ = va_arg(args, ADIO_Offset);
+                r->datatype_ = va_arg(args, MPI_Datatype);
+                r->count_ = va_arg(args, int);
+                r->req_ = va_arg(args, ADIO_Request *);
+                r->error_code_ = va_arg(args, int);
+                r->fflags_ = va_arg(args, int);
+                break;
+            }
+        default:
+            ret = ADIOI_SYNC_REQ_ERR;
     }
 
     va_end(args);
@@ -262,9 +256,10 @@ int ADIOI_Sync_req_set_key(ADIOI_Sync_req_t r, ...) {
 /*
  * ADIOI_Atomic_queue_init - initialise the atomic queue
  */
-void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
+void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t * q)
+{
     /* alloc mem for queue */
-    *q = (struct ADIOI_Atomic_queue *)ADIOI_Malloc(sizeof(struct ADIOI_Atomic_queue));
+    *q = (struct ADIOI_Atomic_queue *) ADIOI_Malloc(sizeof(struct ADIOI_Atomic_queue));
     INIT_LIST_HEAD(&((*q)->head_));
 #ifdef _USE_PTHREAD_MUTEX_
     /* init mutex and cond variable */
@@ -273,7 +268,7 @@ void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
 #endif
     /* allocate and init empty envelop element */
     struct ADIOI_Sync_req_env *env = (struct ADIOI_Sync_req_env *)
-	ADIOI_Malloc(sizeof(struct ADIOI_Sync_req_env));
+        ADIOI_Malloc(sizeof(struct ADIOI_Sync_req_env));
     env->req_ = NULL;
 
     /* add empty envelop to the queue */
@@ -300,7 +295,8 @@ void ADIOI_Atomic_queue_init(ADIOI_Atomic_queue_t *q) {
  *   ADIOI_Atomic_queue_fini()
  *
  */
-void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *q) {
+void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t * q)
+{
     struct ADIOI_Sync_req_env *env;
 
     /* remove and free empty envelop */
@@ -318,26 +314,29 @@ void ADIOI_Atomic_queue_fini(ADIOI_Atomic_queue_t *q) {
 /*
  * ADIOI_Atomic_queue_empty - returns 1 if the queue is empty
  */
-int ADIOI_Atomic_queue_empty(ADIOI_Atomic_queue_t q) {
+int ADIOI_Atomic_queue_empty(ADIOI_Atomic_queue_t q)
+{
     return (q->size_ > 0) ? 0 : 1;
 }
 
 /*
  * ADIOI_Atomic_queue_size - return the num of elements in the queue
  */
-int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t q) {
+int ADIOI_Atomic_queue_size(ADIOI_Atomic_queue_t q)
+{
     return q->size_;
 }
 
 /*
  * ADIOI_Atomic_queue_front - return the oldest element in the queue
  */
-ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
+ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q)
+{
     struct ADIOI_Sync_req_env *env;
 #ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
-	pthread_cond_wait(&q->ready_, &q->lock_);
+        pthread_cond_wait(&q->ready_, &q->lock_);
 #endif
     env = list_entry(q->head_.next, struct ADIOI_Sync_req_env, head_);
 #ifdef _USE_PTHREAD_MUTEX_
@@ -349,12 +348,13 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_front(ADIOI_Atomic_queue_t q) {
 /*
  * ADIOI_Atomic_queue_back - return the youngest element in the queue
  */
-ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
+ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q)
+{
     struct ADIOI_Sync_req_env *env;
 #ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
-	pthread_cond_wait(&q->ready_, &q->lock_);
+        pthread_cond_wait(&q->ready_, &q->lock_);
 #endif
     env = list_entry(q->head_.prev->prev, struct ADIOI_Sync_req_env, head_);
 #ifdef _USE_PTHREAD_MUTEX_
@@ -368,7 +368,8 @@ ADIOI_Sync_req_t ADIOI_Atomic_queue_back(ADIOI_Atomic_queue_t q) {
  *
  * The element memory has been already allocated in the main thread.
  */
-void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
+void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r)
+{
     struct ADIOI_Sync_req_env *env;
 #ifdef _USE_PTHREAD_MUTEX_
     int size;
@@ -384,7 +385,7 @@ void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
 
     /* create a new empty envelop */
     env = (struct ADIOI_Sync_req_env *)
-	ADIOI_Malloc(sizeof(struct ADIOI_Sync_req_env));
+        ADIOI_Malloc(sizeof(struct ADIOI_Sync_req_env));
     env->req_ = NULL;
 
     /* add new empty envelop to queue */
@@ -396,19 +397,20 @@ void ADIOI_Atomic_queue_push(ADIOI_Atomic_queue_t q, ADIOI_Sync_req_t r) {
     pthread_mutex_unlock(&q->lock_);
 
     if (size == 0)
-	pthread_cond_signal(&q->ready_);
+        pthread_cond_signal(&q->ready_);
 #endif
 }
 
 /*
  * ADIOI_Atomic_queue_pop - removes the tail element from the queue
  */
-void ADIOI_Atomic_queue_pop(ADIOI_Atomic_queue_t q) {
+void ADIOI_Atomic_queue_pop(ADIOI_Atomic_queue_t q)
+{
     struct ADIOI_Sync_req_env *env;
 #ifdef _USE_PTHREAD_MUTEX_
     pthread_mutex_lock(&q->lock_);
     while (ADIOI_Atomic_queue_empty(q))
-	pthread_cond_wait(&q->ready_, &q->lock_);
+        pthread_cond_wait(&q->ready_, &q->lock_);
 #endif
     /* remove front envelop */
     env = list_entry(q->head_.next, struct ADIOI_Sync_req_env, head_);

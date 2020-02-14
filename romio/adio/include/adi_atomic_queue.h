@@ -51,7 +51,7 @@ struct ADIOI_Sync_req {
  * to synchronisation requests.
  */
 struct ADIOI_Sync_req_env {
-	struct ADIOI_Sync_req *req_;
-	struct list_head head_;
+    struct ADIOI_Sync_req *req_;
+    struct list_head head_;
 };
 #endif
